@@ -2,7 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use  App\Http\Controllers\AuthController;
+use  App\Http\Controllers\OtpController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -14,6 +15,27 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
+// Route::prefix('api')->group(function () {
+
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::patch('/user/name', [AuthController::class, 'updateName']);
+   
+    Route::get('user', [AuthController::class, 'getAllUser']);
+    Route::get('user-detail', [AuthController::class, 'getUserById']);
+   // Route::put('users', [AuthController::class, 'updateUser']);
+    Route::delete('user-delete', [AuthController::class, 'deleteUser']);
+    Route::patch('/user/password', [AuthController::class, 'updatePassword']);
+
+    Route::post('/otp', [OtpController::class, 'generateOTP']);
+    Route::post('/otp/verify', [OtpController::class, 'verifyOTP']);
+
+    
+
+    
+// } );
