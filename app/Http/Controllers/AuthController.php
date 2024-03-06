@@ -37,7 +37,6 @@ class AuthController extends Controller
             if ($validator->fails()) {
                 return response()->json(['message' => 'Invalid', 'errors' => $validator->errors()], 400);
             }
-    
             // If validation passes, proceed with user registration
             $this->authRepository->createUser($request->all());
             return response()->json(['message' => 'User registered successfully'], 200);
@@ -61,6 +60,7 @@ class AuthController extends Controller
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
             $token = $this->authRepository->login($request->only('email', 'password'));
+            //Auth::attempt(['email', 'password']);
             return response()->json(['message' => 'Login successful'])->cookie(
                 'jwt_token', // Cookie name
                 $token,      // Token value
@@ -174,16 +174,18 @@ class AuthController extends Controller
     public function getAllUser(Request $request) {
        
         $listUsers = $this->authRepository->getAllUser();
+        $_SESSION['allUser'] = $listUsers;
+        return view('listAllUser');
 
-       return response()->json(['message' => 'User Fetched succesfully', 'data' => $listUsers]);
+       //return response()->json(['message' => 'User Fetched succesfully', 'data' => $listUsers]);
     }
 
     public function getUserById(Request $request){
 
         try {
-        
+            $request->merge(['id' => $request->route('id')]);
             $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
-        
+            
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
@@ -192,6 +194,10 @@ class AuthController extends Controller
             $id = $request->input('id');
 
             $user = $this->authRepository->getUserById($id);
+
+            if(!$user){
+                return response()->json(['message' => 'User not found', 'data' => $id],200);
+            }
 
             return response()->json(['message' => 'User Fetched succesfully', 'data' => $user],200);
         }   

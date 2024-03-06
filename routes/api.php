@@ -25,10 +25,9 @@ use  App\Http\Controllers\OtpController;
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::patch('/user/name', [AuthController::class, 'updateName']);
-   
+    
     Route::get('user', [AuthController::class, 'getAllUser']);
-    Route::get('user-detail', [AuthController::class, 'getUserById']);
-   // Route::put('users', [AuthController::class, 'updateUser']);
+    Route::get('user-detail/{id}', [AuthController::class, 'getUserById'])->where('id', '[0-9]+');
     Route::delete('user-delete', [AuthController::class, 'deleteUser']);
     Route::patch('/user/password', [AuthController::class, 'updatePassword']);
 

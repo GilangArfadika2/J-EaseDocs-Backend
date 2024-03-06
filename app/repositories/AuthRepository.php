@@ -14,11 +14,15 @@ class AuthRepository
     public function createUser(array $validatedData)
     {
        error_log("masuk 1");
+       //error_log(print_r($validatedData['name'], true));
+       foreach(array_keys($validatedData) as $paramName)
+       error_log(print_r($paramName, true));
 
         // Create a new user
         User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
+            'nomorpegawai' => $validatedData['nomorpegawai'],
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
