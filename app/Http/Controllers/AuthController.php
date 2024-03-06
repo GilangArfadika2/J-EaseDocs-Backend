@@ -198,8 +198,8 @@ class AuthController extends Controller
             if(!$user){
                 return response()->json(['message' => 'User not found', 'data' => $id],200);
             }
-
-            return response()->json(['message' => 'User Fetched succesfully', 'data' => $user],200);
+            $_SESSION['user']=$user;
+            return view('userDetail');
         }   
         catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
