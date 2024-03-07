@@ -31,9 +31,10 @@ class AuthController extends Controller
     {
         try {
             // Validate JSON data against the schema
-    
+            
             $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
     
+            $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
             if ($validator->fails()) {
                 return response()->json(['message' => 'Invalid', 'errors' => $validator->errors()], 400);
             }
@@ -204,14 +205,12 @@ class AuthController extends Controller
         catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
-
-
     }
 
     public function deleteUser(Request $request){
         
         
-
+        
         $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
     
         if ($validator->fails()) {
@@ -228,10 +227,35 @@ class AuthController extends Controller
 
     }
 
+    public function checkSuperAdmin(Request $request){
+        error_log($request);
+        // Check if the request has cookies
+        if (!$request->hasCookie('jwt_token')) {
+            return response()->json(['message' => 'Missing token cookie'], 401);
+        }
+
+        $token = $request->cookie('jwt_token');
+
+        $user = Auth::user();
+        $user = Auth::guard('web')->setToken($token)->user();
+        if (!$user)  {
+            return response()->json(['message' => 'User is unauthorized'], 403);
+        }
+        else{
+            if(in_array($user->role, ['admin'])){
+                return view('register-penggunaOnly');
+            }
+            else if(in_array($user->role, ['superadmin'])){
+                return view('register');
+            }
+            else{
+                return response()->json(['message' => 'User is unauthorized'], 403);
+            }
+        }
+    }
+
     public function updateUser(Request $request){
-        
         $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
-    
         if ($validator->fails()) {
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
@@ -242,9 +266,5 @@ class AuthController extends Controller
         this->authRepository->updateUser($id, $request->all());
 
         return response()->json(['message' => 'User Updated succesfully']);
-
-
-    }
-
-    
+    }   
 }

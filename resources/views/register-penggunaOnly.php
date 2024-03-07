@@ -62,8 +62,6 @@ $(document).ready(function() {
                 <option value="">Pilih role</option>
             <option value="approval">Kepala Divisi</option>
         <option value="checker">Kepala Bagian</option>
-        <option value="admin">Admin</option>
-        <option value="superadmin">Super Admin</option>
             </select>
         </div>
         <div>

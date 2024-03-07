@@ -36,6 +36,7 @@
     }
     ?>
 </table>
+<a href='/api/addNewUser'> Tambah Pengguna </a>
 </main>
 </body>
     </html>

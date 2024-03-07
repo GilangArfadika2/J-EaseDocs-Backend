@@ -9,6 +9,7 @@ class CheckRoleAndCookie
 {
     public function handle($request, Closure $next)
     {
+        error_log($request);
         // Check if the request has cookies
         if (!$request->hasCookie('jwt_token')) {
             return response()->json(['message' => 'Missing token cookie'], 401);
@@ -25,4 +26,5 @@ class CheckRoleAndCookie
 
         return $next($request);
     }
+    
 }
