@@ -18,7 +18,7 @@ class AuthController extends Controller
     public function __construct(AuthRepository $authRepository)
     {
         $this->authRepository = $authRepository;
-        $this->middleware('check.role.and.cookie')->only(['getAllUser', 'getUserById', 'deleteUser', 'updateUser']);
+        $this->middleware('check.role.and.cookie')->only(['register','getAllUser', 'getUserById', 'deleteUser', 'updateUser']);
     }
 
     /**
@@ -45,6 +45,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Registration failed', 'errors' => $e->getMessage()], 500);
         }
     }
+    
 
     /**
      * Authenticate a user.

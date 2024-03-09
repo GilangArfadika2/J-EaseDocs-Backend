@@ -11,6 +11,7 @@ class AuthValidation{
             'email' => 'required|string|email|unique:user|max:255',
             'password' => 'required|string|min:8|max:255',
             'role' => 'required|in:user,admin,superadmin',
+            'jabatan' => 'required|string|max:255'
         ];
     }
 

@@ -13,7 +13,7 @@ class AuthRepository
     
     public function createUser(array $validatedData)
     {
-       error_log("masuk 1");
+    //    error_log("masuk 1");
 
         // Create a new user
         User::create([
@@ -23,7 +23,7 @@ class AuthRepository
             'role' => $validatedData['role'],
         ]);
 
-        error_log("masuk 2");
+        // error_log("masuk 2");
 
         return true;
     }
