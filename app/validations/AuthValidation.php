@@ -6,12 +6,13 @@ namespace App\Validations;
 class AuthValidation{
     public static function getRegisterRules(): array
     {
+        //print 'role';
         return [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:user|max:255',
             'password' => 'required|string|min:8|max:255',
-            'role' => 'required|in:user,admin,superadmin',
-            'jabatan' => 'required|string|max:255'
+            'role' => 'required|in:checker,approval,admin,superadmin',
+            'nomorpegawai' => 'required|string|max:16',
         ];
     }
 
@@ -27,6 +28,7 @@ class AuthValidation{
     public static function getUserIDRules(): array {
         return [
             'id' => 'required|numeric',
+        
         ];
     }
 
