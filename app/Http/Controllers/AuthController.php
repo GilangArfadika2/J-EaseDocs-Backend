@@ -18,7 +18,7 @@ class AuthController extends Controller
     public function __construct(AuthRepository $authRepository)
     {
         $this->authRepository = $authRepository;
-        $this->middleware('check.role.and.cookie')->only(['getAllUser', 'getUserById', 'deleteUser', 'updateUser']);
+        $this->middleware('check.role.and.cookie')->only(['getAllUser', 'getUserById', 'deleteUser', 'updateUser','updateUserGetter','registerGetter']);
     }
 
     /**
@@ -31,9 +31,10 @@ class AuthController extends Controller
     {
         try {
             // Validate JSON data against the schema
-    
+            
             $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
     
+            $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
             if ($validator->fails()) {
                 return response()->json(['message' => 'Invalid', 'errors' => $validator->errors()], 400);
             }
@@ -125,8 +126,9 @@ class AuthController extends Controller
     public function updateName(Request $request)
     {
         // Retrieve the JWT token from the cookie
-        $token = $request->cookie('jwt_token');
-    
+        if (!$token=$request->hasCookie('jwt_token')) {
+            return response()->json(['message' => 'Missing token cookie'], 401);
+        }
         // Authenticate the user using the token
         $user = Auth::guard('web')->setToken($token)->user();
     
@@ -146,6 +148,9 @@ class AuthController extends Controller
         return response()->json(['message' => 'Name updated successfully', 'user' => $user]);
     }
     
+    public function editPassword(Request $request){
+        return view('updatePasswordform');
+    }
     public function updatePassword(Request $request)
     {
         // Retrieve the JWT token from the cookie
@@ -163,12 +168,13 @@ class AuthController extends Controller
         $request->validate([
             'current_password' => 'required|string',
             'new_password' => 'required|string|min:8|max:255',
+            "new_confirm" => 'required|string|min:8|max:255',
         ]);
     
         // Update the user's password
-        $this->authRepository->updatePassword($user, $request->new_password, $request->current_password);
+        $this->authRepository->updatePassword($user->id, $request->new_password, $request->current_password, $request->new_confirm);
     
-        return response()->json(['message' => 'Password updated successfully']);
+        return AuthController::logout($request);
     }
 
     public function getAllUser(Request $request) {
@@ -181,8 +187,8 @@ class AuthController extends Controller
     }
 
     public function getUserById(Request $request){
-
         try {
+            
             $request->merge(['id' => $request->route('id')]);
             $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
             
@@ -198,40 +204,113 @@ class AuthController extends Controller
             if(!$user){
                 return response()->json(['message' => 'User not found', 'data' => $id],200);
             }
-
-            return response()->json(['message' => 'User Fetched succesfully', 'data' => $user],200);
+            $_SESSION['user']=$user;
+            return view('userDetail');
         }   
         catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
-
-
     }
 
     public function deleteUser(Request $request){
         
-        
-
+        $request->merge(['id' => $request->route('id')]);
         $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
     
         if ($validator->fails()) {
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
 
-        // Retrieve email and OTP from the request
+        $superadmin=AuthController::checkSuperAdmin($request);
         $id = $request->input('id');
+        $user = $this->authRepository->getUserById($id);
+        switch($user['role']){
+            case "admin":
+                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
+            case "superadmin":
+                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
+            default:
+            // Retrieve email and OTP from the request
 
         $this->authRepository->deleteUser($id);
 
         return response()->json(['message' => 'User Deleted succesfully']);
 
+        }
+
 
     }
 
-    public function updateUser(Request $request){
+    //filter out admin vs superadmin privilege
+    public function checkSuperAdmin(Request $request){
+        error_log($request);
+        if (!$request->hasCookie('jwt_token')) {
+            return response()->json(['message' => 'Missing token cookie'], 401);
+        }
+
+        $token = $request->cookie('jwt_token');
+
+        $user = Auth::user();
+        $user = Auth::guard('web')->setToken($token)->user();
+        if (!$user)  {
+            return response()->json(['message' => 'User is unauthorized'], 403);
+        }
+        else{
+            if(in_array($user->role, ['admin'])){
+                return false;
+            }
+            else{
+                return true;
+            }
+        }
+    }
+
+    public function registerGetter(Request $request){
+        $superadmin=AuthController::checkSuperAdmin($request);
+        if($superadmin===true){
+            return view('register');
+        }
+        else{
+            return view('register-penggunaOnly');
+        }
         
-        $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
-    
+    }
+
+    public function updateUserGetter(Request $request){
+        //check the role of user profile
+        $request->merge(['id' => $request->route('id')]);
+            $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
+            
+            if ($validator->fails()) {
+                return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
+            }
+
+            // Retrieve email and OTP from the request
+            $id = $request->input('id');
+
+            $user = $this->authRepository->getUserById($id);
+            $_SESSION['user']=$user;
+            if(!$user){
+                return response()->json(['message' => 'User not found', 'data' => $id],200);
+            }
+
+        //check the role of change implementor
+        $superadmin=AuthController::checkSuperAdmin($request);
+        switch($user['role']){
+            case "admin":
+                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
+            case "superadmin":
+                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
+            default:
+            if($superadmin===true)return view('updateUser');
+            else return view('updatePenggunaOnly');
+
+        }
+    }
+
+    public function updateUser(Request $request){
+        $request->merge(['id' => $request->route('id')]);
+        $validator = Validator::make($request->all(), AuthValidation::getUpdateRules());
         if ($validator->fails()) {
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
@@ -239,12 +318,8 @@ class AuthController extends Controller
         // Retrieve email and OTP from the request
         $id = $request->input('id');
 
-        this->authRepository->updateUser($id, $request->all());
+        $this->authRepository->updateUser($id, $request->all());
 
         return response()->json(['message' => 'User Updated succesfully']);
-
-
-    }
-
-    
+    }   
 }

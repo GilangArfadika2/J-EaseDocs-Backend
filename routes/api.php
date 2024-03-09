@@ -22,14 +22,18 @@ use  App\Http\Controllers\OtpController;
 // Route::prefix('api')->group(function () {
 
     Route::post('/register', [AuthController::class, 'register']);
+    Route::get('/addNewUser', [AuthController::class, 'registerGetter']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/logout', [AuthController::class, 'logout']);
     Route::patch('/user/name', [AuthController::class, 'updateName']);
     
     Route::get('user', [AuthController::class, 'getAllUser']);
     Route::get('user-detail/{id}', [AuthController::class, 'getUserById'])->where('id', '[0-9]+');
-    Route::delete('user-delete', [AuthController::class, 'deleteUser']);
+    Route::delete('user-delete/{id}', [AuthController::class, 'deleteUser'])->where('id', '[0-9]+');
+    Route::get('editPassword',[AuthController::class, 'editPassword']);
     Route::patch('/user/password', [AuthController::class, 'updatePassword']);
+    Route::get('editUser/{id}', [AuthController::class, 'updateUserGetter'])->where('id', '[0-9]+');
+    Route::post('updateUser/{id}', [AuthController::class, 'updateUser'])->where('id', '[0-9]+');
 
     Route::post('/otp', [OtpController::class, 'generateOTP']);
     Route::post('/otp/verify', [OtpController::class, 'verifyOTP']);
