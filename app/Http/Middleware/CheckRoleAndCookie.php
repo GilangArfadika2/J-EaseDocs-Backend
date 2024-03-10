@@ -17,7 +17,8 @@ class CheckRoleAndCookie
         $token = $request->cookie('jwt_token');
 
         // Check if the user has the required role
-        $user = Auth::user();
+        // $user = Auth::user();
+        error_log($token);
         $user = Auth::guard('web')->setToken($token)->user();
         if (!$user || !in_array($user->role, ['superadmin', 'admin'])) {
             return response()->json(['message' => 'User is unauthorized'], 403);

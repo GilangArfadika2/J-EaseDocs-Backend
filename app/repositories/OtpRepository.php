@@ -27,10 +27,6 @@ class OtpRepository
 
     }
 
-    // public function storeOtp($email, $otp, $expiration)
-    // {
-    //     // Store OTP in the database logic
-    // }
 
     public function getOtpById($id)
     {
@@ -48,7 +44,7 @@ class OtpRepository
             }
         }
 
-        return false;
+        return [$ExistingOtp->letter_id, false];
     }
     function generateInviteLinkID($length) {
         // Calculate the number of bytes required to encode the desired length of characters

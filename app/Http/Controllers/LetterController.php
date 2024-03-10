@@ -57,6 +57,51 @@ class LetterController extends Controller
         
     }
 
+    // public function getOTP(Request $request)
+    // {
+        
+
+    //     // Validate the request data
+    //     $validator = Validator::make($request->all(), LetterValidation::verifyOTPRules());
+
+    //     // Check if validation fails
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 422);
+    //     }
+
+    //     $id = $request->input('id');
+    //     $code = $request->input('code');
+
+    //     $verificationResult = $this->otpRepository->verifyOtp($id, $code);
+    //     $letterID = $verificationResult[0];
+    //     $isVerified = $verificationResult[1];
+    //     // Verify OTP
+    //     if ($isVerified) {
+    //         // OTP is valid
+    //         $letter = $this->letterRepository->getLetterByID($letterID);
+    //         return response()->json(['message' => 'OTP verification successful.' ,'data' => $letter ,'role' => 'atasan_pemohon' ], 200);
+    //     } else {
+    //         // OTP is invalid or expired
+    //         return response()->json(['message' => 'OTP verification failed.'], 400);
+    //     }
+    // }
+
+    public function getOtpById( $id)
+    {
+        
+        // $validator = Validator::make($request->all(), LetterValidation::getOTPIDRules());
+        // $otp = $this->otpRepository->getOtpById($request->input(['id']));
+        $otp = $this->otpRepository->getOtpById($id);
+
+        if ($otp) {
+            return response()->json(["message" => "OTP fetched Succesfully" ]);
+        } else {
+            return response()->json(['error' => 'OTP not found'], 400);
+        }
+    }
+
+
+
     public function verifyOTP(Request $request)
     {
         
@@ -79,7 +124,7 @@ class LetterController extends Controller
         if ($isVerified) {
             // OTP is valid
             $letter = $this->letterRepository->getLetterByID($letterID);
-            return response()->json(['message' => 'OTP verification successful.' ,'data' => $letter ,'role' => 'atasan_pemohon' ], 200);
+            return response()->json(['message' => 'OTP verification successful.' ,'id' => $letter->id ,'role' => 'atasan_pemohon' ], 200);
         } else {
             // OTP is invalid or expired
             return response()->json(['message' => 'OTP verification failed.'], 400);
@@ -175,12 +220,17 @@ class LetterController extends Controller
         try {
             $id = $request->input('id');
             $letter = $this->letterRepository->getLetterByID($id);
+    
+            // Decode the JSON data
+            $letter->data = json_decode($letter->data);
+            $letter->member = json_decode($letter->member);
+    
             return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
-          
     }
+    
 
     public function getAllLetter(Request $request){
 

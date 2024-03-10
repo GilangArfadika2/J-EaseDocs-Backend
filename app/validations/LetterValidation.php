@@ -35,6 +35,13 @@ class LetterValidation{
         ];
     }
 
+    public static function getOTPIDRules(): array
+    {
+        return [
+            'id' => 'required|string|min:1',
+        ];
+    }
+
     public  static function updateDecisionRules() : array {
         return [
             'decision' => 'required|string',

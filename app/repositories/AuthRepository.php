@@ -105,7 +105,12 @@ class AuthRepository
         $user = $this->getUserById($id);
 
         $user->name = $validatedCredentials['name'];
+        $user->email = $validatedCredentials['email'];
+        $user->nomorpegawai= $validatedCredentials['nomorpegawai'];
+        // $user->password = $validatedCredentials['password'];
         $user->role = $validatedCredentials['role'];
+        $user->jabatan= $validatedCredentials['jabatan'];
+
 
         $user->save();
 

@@ -32,6 +32,20 @@ class AuthValidation{
         ];
     }
 
+    public static function getUpdateRules(): array
+    {
+        //print 'role';
+        return [
+            'id' => 'required|numeric|min:1',
+            'name' => 'required|string|max:255',
+            'jabatan' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255',
+        // 'password' => 'required|string|min:8|max:255',
+            'role' => 'required|in:checker,approval,admin,superadmin',
+            'nomorpegawai' => 'required|string|max:16',
+        ];
+    }
+
 }
 
 // {

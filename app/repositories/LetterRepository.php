@@ -23,7 +23,7 @@ class LetterRepository
 
         $createdLetter = Letter::create([
             // 'approval_email' => $tabelTandaTanganData['valueEmail3'],
-            'status' => "Waiting for " . $tabelTandaTanganData['valueName1'] . " approval",
+            'status' => "Waiting for " . $tabelTandaTanganData['valueName2'] . " approval",
             "data" => json_encode($data['data']),
             "member" => json_encode($data['member']),
         ]);
