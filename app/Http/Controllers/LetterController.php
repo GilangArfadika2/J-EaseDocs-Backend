@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 use Spatie\PdfToText\Pdf;
 use App\Repositories\OtpRepository;
+use App\Repositories\AuthRepository;
+use App\Repositories\NotifikasiRepository;
 use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
 use Ibnuhalimm\LaravelPdfToHtml\Facades\PdfToHtml;
@@ -16,18 +18,23 @@ use Illuminate\Support\Facades\View;
 use App\Validations\LetterValidation;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
+use App\Models\Notifikasi;
 use App\Mail\NotifMail;
+
 class LetterController extends Controller
 {
     protected $letterRepository;
     protected $dompdf;
     protected $otpRepository;
-
-    public function __construct(LetterRepository $letterRepository, Dompdf  $dompdf , OtpRepository $otpRepository)
+    protected $authRepository;
+    protected $notifikasiRepository;
+    public function __construct(LetterRepository $letterRepository, Dompdf  $dompdf , OtpRepository $otpRepository, AuthRepository $authRepository,NotifikasiRepository $notifikasiRepository)
     {
         $this->letterRepository = $letterRepository;
         $this->dompdf = $dompdf;
         $this->otpRepository = $otpRepository;
+        $this->authRepository = $authRepository;
+        $this->notifikasiRepository = $notifikasiRepository;
     }
 
 
@@ -45,11 +52,13 @@ class LetterController extends Controller
             if ($member['decision'] === 'on-progress' && $member['role'] === 'atasan_pemohon') {
                 error_log($letter->id);
                 $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
-                Mail::to($createdOTP->email)->send(new OtpMail($createdOTP->code));
+                $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+                error_log($link);
+                Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                 break;
             }
         }
-            return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP->id], 200);
+            return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
@@ -136,71 +145,88 @@ class LetterController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
-
-        $decision = $request->all()['decision'];
-
-        $role = $request->all()['role'];
-
-        $letter =  $this->letterRepository->getLetterByID( $request->all()['letter_id']);
-
-        $pemohonEmail = "";
-        $atasanPemohonEmail = "";
-        $header = "";
-
-      
-
+    
+        $decision = $request->input('decision');
+        $role = $request->input('role');
+        $letterId = $request->input('letter_id');
+    
+        // Fetch the letter object
+        $letter = $this->letterRepository->getLetterByID($letterId);
+    
+        // Extract necessary data from the letter object
         $memberArray = json_decode($letter->member, true);
-        $dataArray = json_decode($letter->data,true);
+        $dataArray = json_decode($letter->data, true);
+        $header = '';
         foreach ($dataArray as $data) {
-            if (isset($data["header"])) {
-                $header = $data["header"];
+            if (isset($data['header'])) {
+                $header = $data['header'];
+                break;
             }
         }
-        foreach ($memberArray as $member){
-            if ($member["role"] === "pemohon") {
-                $pemohonEmail = $member["email"];
+    
+        // Prepare email variables
+        $pemohonEmail = '';
+        $atasanPemohonEmail = '';
+        $checkerEmail = '';
+        $approvalEmail = '';
+    
+        foreach ($memberArray as $member) {
+            switch ($member['role']) {
+                case 'pemohon':
+                    $pemohonEmail = $member['email'];
+                    break;
+                case 'atasan_pemohon':
+                    $atasanPemohonEmail = $member['email'];
+                    break;
+                case 'checker':
+                    $checkerEmail = $member['email'];
+                    break;
+                case 'approval':
+                    $approvalEmail = $member['email'];
+                    break;
             }
-            if ($member["role"] == "atasan_pemohon"){
-                $atasanPemohonEmail = $member["email"];
-            }
-
-            
         }
-        error_log("the email is " . $pemohonEmail);
-
-        
-            if ($role == "atasan_pemohon"){
-                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision,$role));
+    
+        // Send notification emails
+        try {
+            if ($role == 'atasan_pemohon') {
+                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role));
+            } else {
+                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role));
+                Mail::to($atasanPemohonEmail)->send(new NotifMail($header, $decision, $role));
             }
-            else {
-                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision,$role));
-                Mail::to($atasanPemohonEmail)->send(new NotifMail($header, $decision,$role));
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to send notification emails'], 500);
+        }
+    
+        // Update decision for the specified role
+        foreach ($memberArray as &$member) {
+            if ($member['role'] === $role) {
+                $member['decision'] = $decision;
+                break;
             }
-
-        
-            foreach ($memberArray as $member){
-                if ($member["role"] ===  $role) {
-                    $member["decision"] = $decision;
-                    
-                }
-
-                if ($decision === "approved"){
-                    if ($member["decision"] ===  "on-progress") {
-                       $this->letterRepository->updateLetterStatus($letter->id, "waiting for " . $member["role"] . " approval" );
-                        break;
-                    }
-                } else {
-                    $this->letterRepository->updateLetterStatus($letter->id, "form is rejected by" . $member["role"] );
+        }
+    
+        // Update letter status if decision is approved
+        if ($decision === 'approved') {
+            foreach ($memberArray as $member) {
+                if ($member['decision'] === 'on-progress') {
+                    $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $member['role'] . " approval");
                     break;
                 }
-                
             }
-
-            return response()->json(['message' => 'update letter success'], 200);
-
-       
-
+        } else {
+            $this->letterRepository->updateLetterStatus($letterId, "form is rejected by " . $role);
+        }
+    
+        // Save updated member data to the letter
+        $updatedMember = json_encode($memberArray);
+        $letter->member = $updatedMember;
+        $letter->save();
+    
+        return response()->json(['message' => 'update letter success'], 200);
     }
+    
 
     public function updateLetter(Request $request){
 

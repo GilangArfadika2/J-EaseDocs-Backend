@@ -23,7 +23,7 @@ class OtpRepository
 
         $createdOTP = Otp::create($data);
 
-        return $createdOTP;
+        return $data;
 
     }
 

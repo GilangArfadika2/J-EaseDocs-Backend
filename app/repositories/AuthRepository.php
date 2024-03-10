@@ -49,7 +49,7 @@ class AuthRepository
     }
     public function getUserByEmail($email)
     {
-        return User::find($email);
+        return User::where('email', $email)->get();
     }
     /**
      * Authenticate a user.
