@@ -22,7 +22,6 @@ use  App\Http\Controllers\OtpController;
 // Route::prefix('api')->group(function () {
 
     Route::post('/register', [AuthController::class, 'register']);
-    Route::get('/addNewUser', [AuthController::class, 'registerGetter']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/logout', [AuthController::class, 'logout']);
     Route::patch('/user/name', [AuthController::class, 'updateName']);
