@@ -27,7 +27,7 @@ class AuthRepository
             'role' => $validatedData['role'],
         ]);
 
-        error_log("masuk 2");
+        // error_log("masuk 2");
 
         return true;
     }
@@ -49,7 +49,7 @@ class AuthRepository
     }
     public function getUserByEmail($email)
     {
-        return User::find($email);
+        return User::where('email', $email)->get();
     }
     /**
      * Authenticate a user.
@@ -105,7 +105,12 @@ class AuthRepository
         $user = $this->getUserById($id);
 
         $user->name = $validatedCredentials['name'];
+        $user->email = $validatedCredentials['email'];
+        $user->nomorpegawai= $validatedCredentials['nomorpegawai'];
+        // $user->password = $validatedCredentials['password'];
         $user->role = $validatedCredentials['role'];
+        $user->jabatan= $validatedCredentials['jabatan'];
+
 
         $user->save();
 

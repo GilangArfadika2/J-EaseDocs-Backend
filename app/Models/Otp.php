@@ -23,6 +23,7 @@ class Otp extends Model
         'code',
         'email',
         'expired_at',
+        'letter_id'
 
     ];
 

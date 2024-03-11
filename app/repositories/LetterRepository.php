@@ -16,9 +16,21 @@ class LetterRepository
         return Letter::find($id);
     }
 
-    public function createLetter(array $data)
+    public function createLetter(array $data) : Letter
     {
-        return Letter::create($data);
+        
+        $tabelTandaTanganData = end($data['data'])['tabel_tandaTangan'];
+
+        $createdLetter = Letter::create([
+            // 'approval_email' => $tabelTandaTanganData['valueEmail3'],
+            'status' => "Waiting for " . $tabelTandaTanganData['valueName2'] . " approval",
+            "data" => json_encode($data['data']),
+            "member" => json_encode($data['member']),
+        ]);
+
+        return  $createdLetter;
+
+
     }
 
     public function updateLetter(int $id, array $data)
@@ -31,7 +43,18 @@ class LetterRepository
         return null;
     }
 
-    public function deleteLeetter(int $id)
+    public function updateLetterStatus(int $id, $status)
+        {
+    $letter = Letter::find($id);
+    if ($letter) {
+        $letter->update(["status" => $status]);
+        return $letter;
+    }
+    return null; 
+}
+
+
+    public function deleteLetter(int $id)
     {
         $letter = Letter::find($id);
         if ($letter) {
