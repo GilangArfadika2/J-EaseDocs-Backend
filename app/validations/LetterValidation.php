@@ -46,7 +46,8 @@ class LetterValidation{
         return [
             'decision' => 'required|string',
             'letter_id' => 'required|numeric',
-            'role' => 'required|string|in:atasan_pemohon,checker,approver'
+            'role' => 'required|string|in:atasan_pemohon,checker,approval',
+            'email' => 'required|email',
         ];
     }
 

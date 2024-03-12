@@ -22,7 +22,8 @@ class Notifikasi extends Model
        'id',
         'message',
         'user_id',
-        'letter_id'
+        'letter_id',
+        'is_read'
         
 
     ];

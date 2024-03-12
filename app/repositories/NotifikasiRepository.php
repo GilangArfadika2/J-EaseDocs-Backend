@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Notifikasi;
+use Illuminate\Support\Facades\DB;
 // use Illuminate\Support\Facades\Notification;
 // use App\Notifications\LetterNotification;
 
@@ -10,53 +11,55 @@ class NotifikasiRepository
 {
     public function getAll()
     {
-        return Notifikasi::all();
+        return DB::table('notifikasi')->get();
     }
 
     public function getById($id)
     {
-        return Notifikasi::findOrFail($id);
+        return DB::table('notifikasi')->find($id);
+    }
+
+    public function deleteNotifikasiByUserIdAndLetterId($userId, $letterId)
+    {
+        DB::table('notifikasi')
+            ->where('user_id', $userId)
+            ->where('letter_id', $letterId)
+            ->delete();
+    }
+
+    public function deleteNotifikasiByLetterId( $letterId)
+    {
+        DB::table('notifikasi')
+            ->where('letter_id', $letterId)
+            ->delete();
     }
 
     public function getNotifikasiByUserId($userId)
     {
-        return Notifikasi::where('user_id', $userId)->get();
+        return DB::table('notifikasi')->where('user_id', $userId)->get();
+    }
+
+    public function getNotifikasiByUserAndLetterId($userId, $letterId)
+    {
+        return DB::table('notifikasi')
+            ->where('user_id', $userId)
+            ->where('letter_id', $letterId)
+            ->first();
     }
 
     public function create($data)
-    {
-        $notifikasi = Notifikasi::create($data);
-        $this->sendNotification('created', $notifikasi);
-        return $notifikasi;
-    }
+{
+    return Notifikasi::create($data);
+}
+
 
     public function update($id, $data)
     {
-        $notifikasi = Notifikasi::findOrFail($id);
-        $notifikasi->update($data);
-        $this->sendNotification('updated', $notifikasi);
-        return $notifikasi;
+        DB::table('notifikasi')->where('id', $id)->update($data);
     }
 
     public function delete($id)
     {
-        $notifikasi = Notifikasi::findOrFail($id);
-        $notifikasi->delete();
-        $this->sendNotification('deleted', $notifikasi);
+        DB::table('notifikasi')->where('id', $id)->delete();
     }
-
-    // private function sendNotification($action, $letter)
-    // {
-    //     $usersToNotify = $this->getUsersToNotify($letter);
-
-    //     foreach ($usersToNotify as $user) {
-    //         Notification::send($user, new LetterNotification($action, $letter));
-    //     }
-    // }
-
-    // private function getUsersToNotify($letter)
-    // {
-    //     // Define your logic to determine users to notify, e.g., $letter->user_id
-    //     // Return collection of users to notify
-    // }
 }

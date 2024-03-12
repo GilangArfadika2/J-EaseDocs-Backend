@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Letter;
-
+use Illuminate\Support\Facades\DB;
 class LetterRepository
 {
     public function getAll()
@@ -12,6 +12,25 @@ class LetterRepository
     }
 
     public function getLetterById(int $id)
+    {
+        return Letter::find($id);
+    }
+
+    public function getLetterByBulkId(array $idArray)
+    {
+        $listLetter =  DB::table('letter')
+        ->whereIn('id',  $idArray)
+        ->get();
+        foreach ($listLetter as &$letter) {
+            $letter->data = json_decode($letter->data, true);
+            $letter->member = json_decode($letter->member, true);
+        }
+
+        return $listLetter;
+    }
+
+
+    public function getLetterByIdAndRole(int $id, $role)
     {
         return Letter::find($id);
     }
@@ -52,6 +71,16 @@ class LetterRepository
     }
     return null; 
 }
+            public function updateLetterMember(int $id, $member)
+            {
+            $letter = Letter::find($id);
+            if ($letter) {
+            $letter->update(["member" => $member]);
+            return $letter;
+            }
+            return null; 
+            }
+
 
 
     public function deleteLetter(int $id)
