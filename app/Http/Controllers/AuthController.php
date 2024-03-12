@@ -122,7 +122,7 @@ class AuthController extends Controller
 
             $user = Auth::guard('web')->setToken($token)->user();
 
-             return response()->json([ 'message' => 'User is already logged in','log_in' => 'true'],200);
+             return response()->json([ 'message' => 'User is already logged in','log_in' => 'true','role' => $user->role],200);
         }
         catch (Exception $e) {
             return response()->json([ 'message' => 'User is not login in','log_in' => 'false'],500);
@@ -168,9 +168,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'Name updated successfully', 'user' => $user]);
     }
     
-    public function editPassword(Request $request){
-        return view('updatePasswordform');
-    }
     public function updatePassword(Request $request)
     {
         // Retrieve the JWT token from the cookie
@@ -193,8 +190,8 @@ class AuthController extends Controller
     
         // Update the user's password
         $this->authRepository->updatePassword($user->id, $request->new_password, $request->current_password, $request->new_confirm);
-    
-        return AuthController::logout($request);
+        //AuthController::logout($request);
+        return response()->json(['message' => 'Password updated successfully']);
     }
 
     public function getAllUser(Request $request) {
@@ -247,7 +244,8 @@ class AuthController extends Controller
     }
 
     public function deleteUser(Request $request){
-        
+        error_log("apapun itu");
+        error_log($request);
         $request->merge(['id' => $request->route('id')]);
         $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
     
@@ -255,25 +253,12 @@ class AuthController extends Controller
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
 
-        $superadmin=AuthController::checkSuperAdmin($request);
+        // Retrieve email and OTP from the request
         $id = $request->input('id');
-        $user = $this->authRepository->getUserById($id);
-        switch($user['role']){
-            case "admin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            case "superadmin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            default:
-            // Retrieve email and OTP from the request
-
         $this->authRepository->deleteUser($id);
 
         return response()->json(['message' => 'User Deleted succesfully']);
-
         }
-
-
-    }
 
     //filter out admin vs superadmin privilege
     public function checkSuperAdmin(Request $request){
@@ -299,48 +284,6 @@ class AuthController extends Controller
         }
     }
 
-    public function registerGetter(Request $request){
-        $superadmin=AuthController::checkSuperAdmin($request);
-        if($superadmin===true){
-            return view('register');
-        }
-        else{
-            return view('register-penggunaOnly');
-        }
-        
-    }
-
-    public function updateUserGetter(Request $request){
-        //check the role of user profile
-        $request->merge(['id' => $request->route('id')]);
-            $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
-            
-            if ($validator->fails()) {
-                return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
-            }
-
-            // Retrieve email and OTP from the request
-            $id = $request->input('id');
-
-            $user = $this->authRepository->getUserById($id);
-            $_SESSION['user']=$user;
-            if(!$user){
-                return response()->json(['message' => 'User not found', 'data' => $id],200);
-            }
-
-        //check the role of change implementor
-        $superadmin=AuthController::checkSuperAdmin($request);
-        switch($user['role']){
-            case "admin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            case "superadmin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            default:
-            if($superadmin===true)return view('updateUser');
-            else return view('updatePenggunaOnly');
-
-        }
-    }
 
     public function updateUser(Request $request){
         // $request->merge(['id' => $request->route('id')]);

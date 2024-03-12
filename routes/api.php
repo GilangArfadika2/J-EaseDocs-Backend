@@ -31,7 +31,7 @@ use App\Http\Controllers\LetterController;
     
     Route::get('user', [AuthController::class, 'getAllUser']);
     Route::get('user-detail/{id}', [AuthController::class, 'getUserById'])->where('id', '[0-9]+');
-    Route::delete('user-delete/{id}', [AuthController::class, 'deleteUser'])->where('id', '[0-9]+');
+    Route::delete('/user-delete/{id}', [AuthController::class, 'deleteUser'])->where('id', '[0-9]+');
     Route::get('editPassword',[AuthController::class, 'editPassword']);
     Route::patch('/user/password', [AuthController::class, 'updatePassword']);
     Route::get('editUser/{id}', [AuthController::class, 'updateUserGetter'])->where('id', '[0-9]+');
