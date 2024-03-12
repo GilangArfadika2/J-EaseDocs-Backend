@@ -28,7 +28,7 @@ class LetterController extends Controller
     protected $otpRepository;
     protected $authRepository;
     protected $notifikasiRepository;
-    public function __construct(LetterRepository $letterRepository, Dompdf  $dompdf , OtpRepository $otpRepository, AuthRepository $authRepository,NotifikasiRepository $notifikasiRepository)
+    public function __construct(LetterRepository $letterRepository, Dompdf  $dompdf , OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository)
     {
         $this->letterRepository = $letterRepository;
         $this->dompdf = $dompdf;
@@ -50,10 +50,10 @@ class LetterController extends Controller
            foreach ($data['member'] as $member) {
 
             if ($member['decision'] === 'on-progress' && $member['role'] === 'atasan_pemohon') {
-                error_log($letter->id);
+                // error_log($letter->id);
                 $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
                 $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
-                error_log($link);
+                // error_log($link);
                 Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                 break;
             }
@@ -66,34 +66,6 @@ class LetterController extends Controller
         
     }
 
-    // public function getOTP(Request $request)
-    // {
-        
-
-    //     // Validate the request data
-    //     $validator = Validator::make($request->all(), LetterValidation::verifyOTPRules());
-
-    //     // Check if validation fails
-    //     if ($validator->fails()) {
-    //         return response()->json(['errors' => $validator->errors()], 422);
-    //     }
-
-    //     $id = $request->input('id');
-    //     $code = $request->input('code');
-
-    //     $verificationResult = $this->otpRepository->verifyOtp($id, $code);
-    //     $letterID = $verificationResult[0];
-    //     $isVerified = $verificationResult[1];
-    //     // Verify OTP
-    //     if ($isVerified) {
-    //         // OTP is valid
-    //         $letter = $this->letterRepository->getLetterByID($letterID);
-    //         return response()->json(['message' => 'OTP verification successful.' ,'data' => $letter ,'role' => 'atasan_pemohon' ], 200);
-    //     } else {
-    //         // OTP is invalid or expired
-    //         return response()->json(['message' => 'OTP verification failed.'], 400);
-    //     }
-    // }
 
     public function getOtpById( $id)
     {
@@ -149,6 +121,12 @@ class LetterController extends Controller
         $decision = $request->input('decision');
         $role = $request->input('role');
         $letterId = $request->input('letter_id');
+        $email = $request->input('email');
+        $userId = 0;
+        if ($role === "checker" || $role === "approval"){
+            $userId = $this->authRepository->getUserByEmail($email)->id;
+        }
+        error_log($userId);
     
         // Fetch the letter object
         $letter = $this->letterRepository->getLetterByID($letterId);
@@ -167,64 +145,209 @@ class LetterController extends Controller
         // Prepare email variables
         $pemohonEmail = '';
         $atasanPemohonEmail = '';
-        $checkerEmail = '';
+        $checkerEmail = "";
         $approvalEmail = '';
-    
-        foreach ($memberArray as $member) {
+
+        $notifikasiNext = false ;
+        $notifikasi = false;
+
+        $isDecisionAssigned = false;
+        $memberCount = count($memberArray);
+        // error_log($memberCount);
+        for ($i = 0; $i < $memberCount; $i++) {
+            $member = &$memberArray[$i];
             switch ($member['role']) {
                 case 'pemohon':
                     $pemohonEmail = $member['email'];
-                    break;
+                    // break;
                 case 'atasan_pemohon':
                     $atasanPemohonEmail = $member['email'];
-                    break;
+                    // break;
                 case 'checker':
                     $checkerEmail = $member['email'];
-                    break;
+                    // break;
                 case 'approval':
                     $approvalEmail = $member['email'];
-                    break;
+                    // break;
             }
-        }
-    
-        // Send notification emails
-        try {
-            if ($role == 'atasan_pemohon') {
-                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role));
-            } else {
-                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role));
-                Mail::to($atasanPemohonEmail)->send(new NotifMail($header, $decision, $role));
-            }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to send notification emails'], 500);
-        }
-    
-        // Update decision for the specified role
-        foreach ($memberArray as &$member) {
-            if ($member['role'] === $role) {
+
+            if ($role === $member["role"] && $email === $member["email"] ){
                 $member['decision'] = $decision;
+                $isDecisionAssigned = true;
+            }
+
+            if ($isDecisionAssigned){
+                if ($decision === 'rejected') {
+                    $message = "letter is rejected by " . $role . " " . $member["email"];
+
+
+                    if ($role == "atasan_pemohon"){
+                        $this->notifikasiRepository->deleteNotifikasiByLetterId($letterId);
+                    }
+
+                    if ($role === "checker") {
+                        $approvalRecord = $memberArray[$memberCount-1];
+                        $approvalId = $this->authRepository->getUserByEmail($approvalRecord["email"])->id;
+                        $this->notifikasiRepository->deleteNotifikasiByUserIdAndLetterId($approvalId,$letterId);
+                    }
+
+                    $this->letterRepository->updateLetterStatus($letterId, "letter is rejected by " . $role . " " . $member["email"]);
+
+                    // $notifikasi->message = $message;
+                    // $notifikasi->save();
+
+                } else  if  ($decision === "on-progress"){
+                    $message ="waiting for " . $member["role"] . " " . $member["email"] . " approval";
+
+                    if ($role == "atasan_pemohon"){
+                        $this->notifikasiRepository->deleteNotifikasiByLetterId($letterId);
+                       
+                        $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
+                        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+                        // error_log($link);
+                        Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
+                    }
+
+                    if ($role === "checker") {
+                        $approvalRecord = $memberArray[$memberCount-1];
+                        $approvalId = $this->authRepository->getUserByEmail($approvalRecord["email"])->id;
+                        $this->notifikasiRepository->deleteNotifikasiByUserIdAndLetterId($approvalId,$letterId);
+                    }
+
+                    $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $member["role"] . " " . $member["email"] . " approval");
+                    
+                    // $notifikasi->message = $message;
+                    // $notifikasi->save();
+                }
+                else {
+
+                    if ($i + 1 >= $memberCount) {
+                        $message ="letter is approved by  " . $member["role"] . " " . $member["email"];
+                        // $notifikasi->message = $message;
+                        // $notifikasi->save();
+                        
+                        $this->letterRepository->updateLetterStatus($letterId, "letter is approved by  " . $member["role"] . " " . $member["email"] );
+                    
+                    } else {
+
+                        $nextChecker = $memberArray[$i+1];
+                        error_log(json_encode($nextChecker));
+                        error_log(json_encode($member));
+
+                        $message = "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval";
+                        
+                        $nextId = $this->authRepository->getUserByEmail( $nextChecker["email"])->id;
+                        $messageNext = "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval";
+
+                        $notifikasiNext = $this->notifikasiRepository->getNotifikasiByUserAndLetterId($nextId, $letterId);
+                        if ($notifikasiNext === null) {
+                            $notifikasiNext = new Notifikasi();
+                            $notifikasiNext->user_id = $nextId;
+                            $notifikasiNext->letter_id = $letterId;
+                            $notifikasiNext->message = $messageNext;
+
+                            // $notifikasiNextArray = (array) $notifikasiNext;
+                            // $this->notifikasiRepository->create( $notifikasiNext);
+                            $notifikasiNext->save();
+
+                        } else {
+                            $notifikasiNext->message = $messageNext;
+                            $notifikasiNextArray = (array) $notifikasiNext;
+                            $this->notifikasiRepository->update($notifikasiNext->id,$notifikasiNextArray);
+                            // $notifikasiNext->save();
+                        }
+                        
+                        $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval");
+                    }
+
+                  
+                  
+                }
+                if ($role === "checker" || $role ==="approval"){
+                    if ($decision === "approved"){
+                        $message ="letter is approved by  " . $member["role"] . " " . $member["email"];
+                    } else if ($decision === "rejected"){
+                        $message = "letter is rejected by " . $role . " " . $member["email"];
+                    } else {
+                        $message ="waiting for " . $member["role"] . " " . $member["email"] . " approval";
+                    }
+                    $notifikasi = $this->notifikasiRepository->getNotifikasiByUserAndLetterId($userId, $letterId);
+                   
+                    if ($notifikasi === null) {
+                        $notifikasi = new Notifikasi();
+                        $notifikasi->user_id = $nextId;
+                        $notifikasi->letter_id = $letterId;
+                        $notifikasi->message = $messageNext;
+
+                        $notifikasiArray = (array) $notifikasi;
+                        // $this->notifikasiRepository->create( $notifikasiArray);
+                        $notifikasi->save();
+
+                    } else {
+                        $notifikasi->message = $message;
+                        $notifikasiArray = (array) $notifikasi;
+                        $this->notifikasiRepository->update($notifikasi->id,$notifikasiArray);
+                        // $notifikasi->save();
+                    }
+                    // if ($notifikasiNext){
+                    //     $notifikasiNext->save();
+                    // }
+
+                }
                 break;
             }
+            
+
         }
+        if (!$isDecisionAssigned){
+            return response()->json(['message' => 'Member Record Not Found'], 400);
+        }
+        // if ($notifikasi !== false || $notifikasi !== null ){
+        //     $notifikasi->save();
+        // }
+        // if ($notifikasiNext !== false || $notifikasiNext !== null ){
+        //     $notifikasiNext->save();
+        // }
+        error_log(json_encode($memberArray));
+        $this->letterRepository->updateLetterMember($letterId,$memberArray);
     
-        // Update letter status if decision is approved
-        if ($decision === 'approved') {
-            foreach ($memberArray as $member) {
-                if ($member['decision'] === 'on-progress') {
-                    $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $member['role'] . " approval");
-                    break;
-                }
+        try {
+            if ($role === 'atasan_pemohon') {
+                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
+            } else {
+                Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
+                Mail::to($atasanPemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
             }
-        } else {
-            $this->letterRepository->updateLetterStatus($letterId, "form is rejected by " . $role);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Failed to send notification emails'], 500);
         }
-    
-        // Save updated member data to the letter
-        $updatedMember = json_encode($memberArray);
-        $letter->member = $updatedMember;
-        $letter->save();
+
     
         return response()->json(['message' => 'update letter success'], 200);
+    }
+
+    public function getLetterByIdAndRole(Request $request){
+        if (!$request->hasCookie('jwt_token')) {
+            return response()->json(['message' => 'Missing token cookie','log_in' => 'false'], 400);
+        }
+
+        $token = $request->cookie('jwt_token');
+
+        $user = Auth::guard('web')->setToken($token)->user();
+
+        // $listLetter = $this->letterRepository-
+    }
+
+    public function changeAtasanPemohonDecision(array $memberArray, $decision) {
+
+        foreach ($memberArray as &$member) {
+            if ($member['role'] === "atasan_pemohon") {
+                $member['decision'] = $decision;
+                break;
+            }     
+        }
+
+        return $member;
     }
     
 
@@ -256,6 +379,36 @@ class LetterController extends Controller
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
     }
+
+    public function getLetterByBulkUserId(Request $request){
+
+        try {
+            if (!$request->hasCookie('jwt_token')) {
+                return response()->json(['message' => 'Missing token cookie','log_in' => 'false'], 400);
+            }
+
+            $token = $request->cookie('jwt_token');
+
+            $user = Auth::guard('web')->setToken($token)->user();
+            $listNotifikasi = $this->notifikasiRepository->getNotifikasiByUserId($user->id);
+            error_log(json_encode($listNotifikasi));
+            $listLetterId = [];
+
+            foreach ($listNotifikasi as $notifikasi) {
+                // error_log($notifikasi);
+                $listLetterId[] = $notifikasi->letter_id;
+            }
+
+            $listLetter = $this->letterRepository->getLetterByBulkId($listLetterId);
+            // // Decode the JSON data
+            // $letter->data = json_decode($letter->data);
+            // $letter->member = json_decode($letter->member);
+    
+            return response()->json(['message' => 'Letter fetched successfully', 'data' => $listLetter ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+    }
     
 
     public function getAllLetter(Request $request){
@@ -278,6 +431,8 @@ class LetterController extends Controller
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
     }
+
+    
 
 //     public function generatePDF() {
 //     // $filename = 'example2.pdf';

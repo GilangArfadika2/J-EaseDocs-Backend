@@ -43,13 +43,13 @@ class AuthRepository
      * @param  int  $id
      * @return \App\Models\User|null
      */
-    public function getUserById(int $id)
+    public function getUserById( $id)
     {
         return User::find($id);
     }
     public function getUserByEmail($email)
     {
-        return User::where('email', $email)->get();
+        return User::where('email', $email)->first();
     }
     /**
      * Authenticate a user.
