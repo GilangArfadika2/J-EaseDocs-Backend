@@ -35,6 +35,11 @@ class LetterRepository
         return Letter::find($id);
     }
 
+    public function getLetterByNomorSurat($nomorSurat)
+    {
+        return DB::table('letter')->where("nomor_surat",$nomorSurat)->first();
+    }
+
     public function createLetter(array $data) : Letter
     {
         
@@ -92,4 +97,15 @@ class LetterRepository
         }
         return false;
     }
+
+    
+    public function updateLetterNomorSurat(int $id, $nomor_surat)
+        {
+    $letter = Letter::find($id);
+    if ($letter) {
+        $letter->update(["nomor_surat" => $nomor_surat]);
+        return $letter;
+    }
+    return null; 
+}
 }

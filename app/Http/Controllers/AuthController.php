@@ -73,7 +73,7 @@ class AuthController extends Controller
                 true       // HTTP-only flag
             );
         } catch (ValidationException $e) {
-            return response()->json(['message' => 'Login failed', 'errors' => $e->errors()], 422);
+            return response()->json(['message' => 'Login failed', 'errors' => $e->errors()], 400);
         }
     }
 
@@ -122,7 +122,7 @@ class AuthController extends Controller
 
             $user = Auth::guard('web')->setToken($token)->user();
 
-             return response()->json([ 'message' => 'User is already logged in','log_in' => 'true'],200);
+             return response()->json([ 'message' => 'User is already logged in','log_in' => 'true','role' => $user->role , 'email' => $user->email],200);
         }
         catch (Exception $e) {
             return response()->json([ 'message' => 'User is not login in','log_in' => 'false'],500);

@@ -66,6 +66,21 @@ class LetterController extends Controller
         
     }
 
+    public function resendOtp($email,$id){
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            // Return an error message or throw an exception for invalid email format
+            return response()->json(['message'  => 'Invalid email format'],400);
+        }
+
+        $createdOTP = $this->otpRepository->resendOtp($email,$id);
+        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+                // error_log($link);
+        Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
+
+        return response()->json(['message' => 'Otp regenerated succesfully', 'data' => $createdOTP['id']], 200);
+    }
+
+
 
     public function getOtpById( $id)
     {
@@ -108,7 +123,7 @@ class LetterController extends Controller
             return response()->json(['message' => 'OTP verification successful.' ,'id' => $letter->id ,'role' => 'atasan_pemohon' ], 200);
         } else {
             // OTP is invalid or expired
-            return response()->json(['message' => 'OTP verification failed.'], 400);
+            return response()->json(['message' => 'OTP verification failed'], 400);
         }
     }
 
@@ -225,6 +240,14 @@ class LetterController extends Controller
                         $message ="letter is approved by  " . $member["role"] . " " . $member["email"];
                         // $notifikasi->message = $message;
                         // $notifikasi->save();
+
+                        $nomorSurat = $this->generateNomorSurat(10);
+                        
+                        $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
+
+                        $createdOTP = $this->otpRepository->generateOtp($pemohonEmail,$letter->id);
+                        $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $pemohonEmail;
+                        Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                         
                         $this->letterRepository->updateLetterStatus($letterId, "letter is approved by  " . $member["role"] . " " . $member["email"] );
                     
@@ -430,6 +453,31 @@ class LetterController extends Controller
         } catch (Exception $e){
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
+    }
+    // public function getLetterByNomorSurat($nomorSurat)
+    // {
+    //    $return response()->json()
+    // }
+    public function generateNomorSurat($length) {
+        // Calculate the number of bytes required to encode the desired length of characters
+        $numBytes = $length * 6 / 8;
+        if ($length % 8 != 0) {
+            $numBytes++;
+        }
+    
+        // Generate random bytes
+        $bytes = random_bytes($numBytes);
+    
+        // Encode the random bytes using base64 URL encoding
+        $encoded = base64_encode($bytes);
+    
+        // Make the string URL-safe by replacing characters '+', '/' and '='
+        $encoded = str_replace(['+', '/', '='], ['-', '_', ''], $encoded);
+    
+        // Truncate the encoded string to the desired length
+        $encoded = substr($encoded, 0, $length);
+    
+        return $encoded;
     }
 
     

@@ -22,7 +22,8 @@ class Letter extends Model
        'id',
         'data',
         'member',
-        'status'
+        'status',
+        'nomor_surat',
         
 
     ];

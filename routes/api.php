@@ -47,6 +47,7 @@ Route::post('/otp/verify-otp', [LetterController::class, 'verifyOTP']);
 Route::patch('/letter/update-decision', [LetterController::class, 'updateDecision']);
 Route::get('/otp/{id}', [LetterController::class, 'getOtpById']);
 Route::get('/letter/bulk', [LetterController::class, 'getLetterByBulkUserId']);
+Route::get('/otp/regenerate/{email}/{id}', [LetterController::class, 'resendOtp']);
 
 
 // Additional routes...
