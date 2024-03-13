@@ -68,7 +68,7 @@ class AuthController extends Controller
                 $token,      // Token value
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
-                'localhost',
+                null, 
                 false,       // Secure (set to true if using HTTPS)
                 true       // HTTP-only flag
             );
