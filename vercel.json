@@ -22,6 +22,14 @@
 
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "cookie"
+        "SESSION_DRIVER": "cookie",
+
+       "DB_CONNECTION":"pgsql",
+       "DB_HOST":"ep-raspy-snowflake-a1m9g23n.ap-southeast-1.aws.neon.tech",
+       "DB_PORT":5432,
+        
+       "DB_DATABASE":"J-EaseDocDb",
+       "DB_USERNAME":"sipropensi",
+       "DB_PASSWORD" : "endpoint=ep-raspy-snowflake-a1m9g23n;5ytwpZbO6hEm"
     }
 }
