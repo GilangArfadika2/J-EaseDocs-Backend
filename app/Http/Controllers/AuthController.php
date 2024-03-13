@@ -69,7 +69,7 @@ class AuthController extends Controller
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
                 'localhost',
-                false,       // Secure (set to true if using HTTPS)
+                true,       // Secure (set to true if using HTTPS)
                 true       // HTTP-only flag
             );
         } catch (ValidationException $e) {
