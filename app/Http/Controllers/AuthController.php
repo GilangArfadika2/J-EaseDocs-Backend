@@ -55,25 +55,26 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
-
-        if (!$token = Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+        try {
+            $validator = Validator::make($request->all(), AuthValidation::getLoginRules());
+    
+            if ($validator->fails()) {
+                return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
+            }
+            $token = $this->authRepository->login($request->only('email', 'password'));
+            //Auth::attempt(['email', 'password']);
+            return response()->json(['message' => 'Login successful'])->cookie(
+                'jwt_token', // Cookie name
+                $token,      // Token value
+                60,          // Cookie expiration time in minutes
+                '/',         // Path
+                '.vercel.app',
+                false,       // Secure (set to true if using HTTPS)
+                true       // HTTP-only flag
+            );
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Login failed', 'errors' => $e->errors()], 400);
         }
-
-        // Generate a JWT token
-        $token = JWTAuth::attempt($credentials);
-
-        // Set the JWT token as a cookie
-        return response()->json(['message' => 'Login successful'])->cookie(
-            'jwt_token', // Cookie name
-            $token,      // Token value
-            60,          // Cookie expiration time in minutes
-            '/',         // Path
-            '.vercel.app', // Domain
-            false,       // Secure (set to true if using HTTPS)
-            true         // HTTP-only flag
-        );
     }
 
     /**
