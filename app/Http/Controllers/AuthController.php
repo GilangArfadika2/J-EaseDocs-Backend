@@ -68,7 +68,7 @@ class AuthController extends Controller
                 $token,      // Token value
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
-                '.vercel.app',
+                'https://j-ease-docs-backend.vercel.app',
                 true,       // Secure (set to true if using HTTPS)
                 true       // HTTP-only flag
             );
@@ -86,8 +86,8 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            if ($request->hasCookie('_vercel_jwt')) {
-                $token = $request->cookie('_vercel_jwt');
+            if ($request->hasCookie('jwt_token')) {
+                $token = $request->cookie('jwt_token');
     
                 Auth::guard('web')->setToken($token)->invalidate();
     
@@ -114,11 +114,11 @@ class AuthController extends Controller
     public function isLogin(Request $request) {
         try {
 
-            if (!$request->hasCookie('_vercel_jwt')) {
+            if (!$request->hasCookie('jwt_token')) {
                 return response()->json(['message' => 'Missing token cookie','log_in' => 'false'], 400);
             }
 
-            $token = $request->cookie('_vercel_jwt');
+            $token = $request->cookie('jwt_token');
 
             $user = Auth::guard('web')->setToken($token)->user();
 
@@ -139,14 +139,14 @@ class AuthController extends Controller
     protected function clearTokenCookie()
     {
         // Set an empty cookie with the same name and past expiration time
-        return Cookie::forget('_vercel_jwt');
+        return Cookie::forget('jwt_token');
     }
 
 
     public function updateName(Request $request)
     {
         // Retrieve the JWT token from the cookie
-        if (!$token=$request->hasCookie('_vercel_jwt')) {
+        if (!$token=$request->hasCookie('jwt_token')) {
             return response()->json(['message' => 'Missing token cookie'], 401);
         }
         // Authenticate the user using the token
@@ -174,7 +174,7 @@ class AuthController extends Controller
     public function updatePassword(Request $request)
     {
         // Retrieve the JWT token from the cookie
-        $token = $request->cookie('_vercel_jwt');
+        $token = $request->cookie('jwt_token');
     
         // Authenticate the user using the token
         $user = Auth::guard('web')->setToken($token)->user();
@@ -200,11 +200,11 @@ class AuthController extends Controller
     public function getAllUser(Request $request) {
         try {
 
-            if (!$request->hasCookie('_vercel_jwt')) {
+            if (!$request->hasCookie('jwt_token')) {
                 return response()->json(['message' => 'Missing token cookie'], 400);
             }
 
-            $token = $request->cookie('_vercel_jwt');
+            $token = $request->cookie('jwt_token');
 
             $user = Auth::guard('web')->setToken($token)->user();
         
@@ -278,11 +278,11 @@ class AuthController extends Controller
     //filter out admin vs superadmin privilege
     public function checkSuperAdmin(Request $request){
         error_log($request);
-        if (!$request->hasCookie('_vercel_jwt')) {
+        if (!$request->hasCookie('jwt_token')) {
             return response()->json(['message' => 'Missing token cookie'], 400);
         }
 
-        $token = $request->cookie('_vercel_jwt');
+        $token = $request->cookie('jwt_token');
 
         $user = Auth::user();
         $user = Auth::guard('web')->setToken($token)->user();
