@@ -13,12 +13,16 @@ class AuthRepository
     
     public function createUser(array $validatedData)
     {
-    //    error_log("masuk 1");
+       error_log("masuk 1");
+       //error_log(print_r($validatedData['name'], true));
+       foreach(array_keys($validatedData) as $paramName)
+       error_log(print_r($paramName, true));
 
         // Create a new user
         User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
+            'nomorpegawai' => $validatedData['nomorpegawai'],
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
@@ -39,11 +43,14 @@ class AuthRepository
      * @param  int  $id
      * @return \App\Models\User|null
      */
-    public function getUserById(int $id)
+    public function getUserById( $id)
     {
         return User::find($id);
     }
-
+    public function getUserByEmail($email)
+    {
+        return User::where('email', $email)->first();
+    }
     /**
      * Authenticate a user.
      *
@@ -99,8 +106,11 @@ class AuthRepository
 
         $user->name = $validatedCredentials['name'];
         $user->email = $validatedCredentials['email'];
-        $user->password = Hash::make($validatedCredentials['password']);
+        $user->nomorpegawai= $validatedCredentials['nomorpegawai'];
+        // $user->password = $validatedCredentials['password'];
         $user->role = $validatedCredentials['role'];
+        $user->jabatan= $validatedCredentials['jabatan'];
+
 
         $user->save();
 
@@ -118,10 +128,10 @@ class AuthRepository
      * @return void
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function updatePassword( $id, string $newPassword, string $currentPassword): void
+    public function updatePassword( $id, string $newPassword, string $currentPassword, string $newPasswordConfirm): void
     {
        
-        $user = $this.getUserById($id);
+        $user = $this->getUserById($id);
        
         // Verify if the current password matches the user's actual password
         if (!Hash::check($currentPassword, $user->password)) {
@@ -129,6 +139,12 @@ class AuthRepository
                 'current_password' => ['The provided current password is incorrect.'],
             ]);
         }
+        if ($newPassword!== $newPasswordConfirm) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided new password is not matched with the confirmed new password.'],
+            ]);
+        }
+        
 
         // Update the password
         $user->password = Hash::make($newPassword);

@@ -6,7 +6,7 @@ namespace App\Models;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-class Letter extends Model
+class Notifikasi extends Model
 {
     use  HasFactory, Notifiable;
 
@@ -16,14 +16,14 @@ class Letter extends Model
      * @var array<int, string>
      */
 
-    protected $table = 'letter';
+    protected $table = 'notifikasi';
     public $timestamps = false;
     protected $fillable = [
        'id',
-        'data',
-        'member',
-        'status',
-        'nomor_surat',
+        'message',
+        'user_id',
+        'letter_id',
+        'is_read'
         
 
     ];

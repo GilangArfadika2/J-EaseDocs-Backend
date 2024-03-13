@@ -18,9 +18,13 @@
       },
       "role": {
         "type": "string",
-        "enum": ["user", "admin", "superadmin"]
+        "enum": ["checker","approval", "admin", "superadmin"]
+      },
+      "nomorpegawai":{
+        "type": "string",
+        "maxLength": 16
       }
     },
-    "required": ["name", "email", "password", "role"]
+    "required": ["name", "email", "password", "role", "nomorpegawai"]
   }
   

@@ -35,11 +35,19 @@ class LetterValidation{
         ];
     }
 
+    public static function getOTPIDRules(): array
+    {
+        return [
+            'id' => 'required|string|min:1',
+        ];
+    }
+
     public  static function updateDecisionRules() : array {
         return [
             'decision' => 'required|string',
             'letter_id' => 'required|numeric',
-            'role' => 'required|string|in:atasan_pemohon,checker,approver'
+            'role' => 'required|string|in:atasan_pemohon,checker,approval',
+            'email' => 'required|email',
         ];
     }
 

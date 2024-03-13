@@ -71,7 +71,7 @@ class OtpController extends Controller
             return response()->json(['message' => 'OTP verification successful.'], 200);
         } else {
             // OTP is invalid or expired
-            return response()->json(['error' => 'OTP verification failed.'], 422);
+            return response()->json(['error' => 'OTP verification failed.'], 400);
         }
     }
 }

@@ -4,7 +4,7 @@ namespace App\Repositories;
 use App\Models\Otp;
 use OTPHP\TOTP;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\DB;
 class OtpRepository
 {
     public function generateOtp($email,$letter_id)
@@ -23,14 +23,10 @@ class OtpRepository
 
         $createdOTP = Otp::create($data);
 
-        return $createdOTP;
+        return $data;
 
     }
 
-    // public function storeOtp($email, $otp, $expiration)
-    // {
-    //     // Store OTP in the database logic
-    // }
 
     public function getOtpById($id)
     {
@@ -48,8 +44,33 @@ class OtpRepository
             }
         }
 
-        return false;
+        return [$ExistingOtp->letter_id, false];
     }
+
+    public function resendOtp($email,$id)
+    {
+        $existingOtp = $this->getOtpById($id);
+        $existingOtp = DB::table('otp')->where('id',$id)->where('email',$email)->delete();
+        $letter_id = $existingOtp->letter_id;
+        
+        $totp = TOTP::create();
+        $otp = $totp->now(); //
+        $expired_at = Carbon::now()->addMinutes(300);
+        $data = [
+            'code' => $otp ,
+            'email' => $email,
+            'expired_at' => $expired_at,
+            'id' => $this->generateInviteLinkID(16),
+            'letter_id' => $letter_id
+        ];
+
+        $createdOTP = Otp::create($data);
+
+        
+        return $data;
+
+    }
+
     function generateInviteLinkID($length) {
         // Calculate the number of bytes required to encode the desired length of characters
         $numBytes = $length * 6 / 8;

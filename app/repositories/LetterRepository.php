@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Letter;
-
+use Illuminate\Support\Facades\DB;
 class LetterRepository
 {
     public function getAll()
@@ -16,6 +16,30 @@ class LetterRepository
         return Letter::find($id);
     }
 
+    public function getLetterByBulkId(array $idArray)
+    {
+        $listLetter =  DB::table('letter')
+        ->whereIn('id',  $idArray)
+        ->get();
+        foreach ($listLetter as &$letter) {
+            $letter->data = json_decode($letter->data, true);
+            $letter->member = json_decode($letter->member, true);
+        }
+
+        return $listLetter;
+    }
+
+
+    public function getLetterByIdAndRole(int $id, $role)
+    {
+        return Letter::find($id);
+    }
+
+    public function getLetterByNomorSurat($nomorSurat)
+    {
+        return DB::table('letter')->where("nomor_surat",$nomorSurat)->first();
+    }
+
     public function createLetter(array $data) : Letter
     {
         
@@ -23,7 +47,7 @@ class LetterRepository
 
         $createdLetter = Letter::create([
             // 'approval_email' => $tabelTandaTanganData['valueEmail3'],
-            'status' => "Waiting for " . $tabelTandaTanganData['valueName1'] . " approval",
+            'status' => "Waiting for " . $tabelTandaTanganData['valueName2'] . " approval",
             "data" => json_encode($data['data']),
             "member" => json_encode($data['member']),
         ]);
@@ -52,6 +76,16 @@ class LetterRepository
     }
     return null; 
 }
+            public function updateLetterMember(int $id, $member)
+            {
+            $letter = Letter::find($id);
+            if ($letter) {
+            $letter->update(["member" => $member]);
+            return $letter;
+            }
+            return null; 
+            }
+
 
 
     public function deleteLetter(int $id)
@@ -63,4 +97,15 @@ class LetterRepository
         }
         return false;
     }
+
+    
+    public function updateLetterNomorSurat(int $id, $nomor_surat)
+        {
+    $letter = Letter::find($id);
+    if ($letter) {
+        $letter->update(["nomor_surat" => $nomor_surat]);
+        return $letter;
+    }
+    return null; 
+}
 }
