@@ -17,22 +17,13 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
-
-    'allowed_origins' => [ 'http://localhost:3000', 'https://j-easedocs-frontend-k7evvvd1r-gilangs-projects-60900864.vercel.app' ],
-
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['*'],
-
-    'exposed_headers' => [],
-
-    'max_age' => 0,
-
-    // 'supports_credentials' => false,
+    'allowed_origins' => ['http://localhost:3000', 'https://j-easedocs-frontend-k7evvvd1r-gilangs-projects-60900864.vercel.app'],
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+
     'allowed_headers' => ['Content-Type', 'Authorization'],
+
     'supports_credentials' => true,
 
 ];
+
