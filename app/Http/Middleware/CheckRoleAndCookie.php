@@ -10,11 +10,11 @@ class CheckRoleAndCookie
     public function handle($request, Closure $next)
     {
         // Check if the request has cookies
-        if (!$request->hasCookie('jwt_token')) {
+        if (!$request->hasCookie('_vercel_jwt')) {
             return response()->json(['message' => 'Missing token cookie'], 400);
         }
 
-        $token = $request->cookie('jwt_token');
+        $token = $request->cookie('_vercel_jwt');
 
         // Check if the user has the required role
         // $user = Auth::user();
