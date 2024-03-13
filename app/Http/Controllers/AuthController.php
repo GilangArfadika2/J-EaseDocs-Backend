@@ -68,7 +68,7 @@ class AuthController extends Controller
                 $token,      // Token value
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
-                'https://j-easedocs-frontend.vercel.app/',
+                'j-easedocs-frontend.vercel.app',
                 true,       // Secure (set to true if using HTTPS)
                 true       // HTTP-only flag
             );
