@@ -101,7 +101,9 @@ class AuthController extends Controller
                     '/',
                     null,
                     false,
-                    true
+                    true,
+                    true,
+                    'None'
                 );
             } else {
                 // No token cookie found, user is already logged out
