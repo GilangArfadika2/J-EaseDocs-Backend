@@ -17,7 +17,7 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_origins' => ['http://localhost:3000', 'https://j-easedocs-frontend-k7evvvd1r-gilangs-projects-60900864.vercel.app'],
+    'allowed_origins' => ['http://localhost:3000', 'https://j-easedocs-frontend-k7evvvd1r-gilangs-projects-60900864.vercel.app', 'https://j-easedocs-frontend.vercel.app'],
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 
