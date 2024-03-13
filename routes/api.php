@@ -38,16 +38,17 @@ use App\Http\Controllers\LetterController;
     Route::get('editUser/{id}', [AuthController::class, 'updateUserGetter'])->where('id', '[0-9]+');
     Route::patch('updateUser', [AuthController::class, 'updateUser']);
 
-    Route::post('/letter/create', [LetterController::class, 'createLetter']);
-Route::patch('letter/update', [LetterController::class, 'updateLetter']);
-Route::post('letter', [LetterController::class, 'getAllLetter']);
-Route::post('letter/detail', [LetterController::class, 'getLetterById']);
+        // Route::post('letter/create', [LetterController::class, 'createLetter']);
+        Route::post('letter/new', [LetterController::class,'CreateLetter']);
+        Route::patch('letter/update', [LetterController::class, 'updateLetter']);
+        Route::post('letter', [LetterController::class, 'getAllLetter']);
+        Route::post('letter/detail', [LetterController::class, 'getLetterById']);
 
-Route::post('/otp/verify-otp', [LetterController::class, 'verifyOTP']);
-Route::patch('/letter/update-decision', [LetterController::class, 'updateDecision']);
-Route::get('/otp/{id}', [LetterController::class, 'getOtpById']);
-Route::get('/letter/bulk', [LetterController::class, 'getLetterByBulkUserId']);
-Route::get('/otp/regenerate/{email}/{id}', [LetterController::class, 'resendOtp']);
+        Route::post('/otp/verify-otp', [LetterController::class, 'verifyOTP']);
+        Route::patch('/letter/update-decision', [LetterController::class, 'updateDecision']);
+        Route::get('/otp/{id}', [LetterController::class, 'getOtpById']);
+        Route::get('/letter/bulk', [LetterController::class, 'getLetterByBulkUserId']);
+        Route::get('/otp/regenerate/{email}/{id}', [LetterController::class, 'resendOtp']);
 
 
 // Additional routes...

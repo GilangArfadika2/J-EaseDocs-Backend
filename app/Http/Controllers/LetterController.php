@@ -38,7 +38,7 @@ class LetterController extends Controller
     }
 
 
-    public function createLetter(Request $request){
+    public function CreateLetter(Request $request){
 
         try {
             $data = $request->all();

@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [ 'http://localhost:3000' ],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +29,10 @@ return [
 
     'max_age' => 0,
 
+    // 'supports_credentials' => false,
+
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    'allowed_headers' => ['Content-Type', 'Authorization'],
     'supports_credentials' => true,
 
 ];
