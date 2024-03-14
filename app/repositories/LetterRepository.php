@@ -16,6 +16,28 @@ class LetterRepository
         return Letter::find($id);
     }
 
+    public function getAllArsip() {
+        $listLetter = DB::table('letter')
+            ->whereNotNull('nomor_surat')
+            ->get();
+        foreach ($listLetter as &$letter) {
+            $letter->data = json_decode($letter->data, true);
+            $letter->member = json_decode($letter->member, true);
+        }
+
+        return $listLetter;
+    }
+
+    public function getArsipById($nomorSurat) {
+        $letter = DB::table('letter')
+            ->where('nomor_surat', $nomorSurat)
+            ->first();
+            $letter->data = json_decode($letter->data, true);
+            $letter->member = json_decode($letter->member, true);
+
+        return $letter;
+    }
+
     public function getLetterByBulkId(array $idArray)
     {
         $listLetter =  DB::table('letter')

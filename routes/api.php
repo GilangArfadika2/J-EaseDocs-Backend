@@ -49,6 +49,8 @@ use App\Http\Controllers\LetterController;
         Route::get('/otp/{id}', [LetterController::class, 'getOtpById']);
         Route::get('/letter/bulk', [LetterController::class, 'getLetterByBulkUserId']);
         Route::get('/otp/regenerate/{email}/{id}', [LetterController::class, 'resendOtp']);
+        Route::get('/Arsip', [LetterController::class,'getAllArsip']);
+        Route::get('/Arsip/{nomorSurat}' , [LetterController::class,'getArsipByID']);
 
 
 // Additional routes...

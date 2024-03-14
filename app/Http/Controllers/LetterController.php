@@ -37,6 +37,45 @@ class LetterController extends Controller
         $this->notifikasiRepository = $notifikasiRepository;
     }
 
+    public function getAllArsip(){
+
+        try {
+
+            // if (!$request->hasCookie('jwt_token')) {
+            //     return response()->json(['message' => 'Missing token cookie'], 400);
+            // }
+
+            // $token = $request->cookie('jwt_token');
+
+            // $user = Auth::guard('web')->setToken($token)->user();
+
+            $listLetter = $this->letterRepository->getAllArsip();
+            return response()->json(['message' => 'letter fetched succesfully' , 'data' => $listLetter],200);
+        } catch (Exception $e){
+
+            return response()->json(['message' => $e ],500);
+        }
+
+    
+    }
+
+    public function getArsipByID($nomorSurat){
+
+        try {
+
+            $letter = $this->letterRepository->getArsipById($nomorSurat);
+            if  ($letter === null) {
+                return response()->json(['message' => 'letter not found' ],400);
+            }
+            return response()->json(['message' => 'letter fetched succesfully' , 'data' => $letter],200);
+        } catch (Exception $e){
+
+            return response()->json(['message' => $e ],500);
+        }
+
+    
+    }
+
 
     public function CreateLetter(Request $request){
 
@@ -52,7 +91,7 @@ class LetterController extends Controller
             if ($member['decision'] === 'on-progress' && $member['role'] === 'atasan_pemohon') {
                 // error_log($letter->id);
                 $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
-                $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+                $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                 // error_log($link);
                 Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                 break;
@@ -73,7 +112,7 @@ class LetterController extends Controller
         }
 
         $createdOTP = $this->otpRepository->resendOtp($email,$id);
-        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+        $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                 // error_log($link);
         Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
 
@@ -218,7 +257,7 @@ class LetterController extends Controller
                         $this->notifikasiRepository->deleteNotifikasiByLetterId($letterId);
                        
                         $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
-                        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+                        $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                         // error_log($link);
                         Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                     }
@@ -246,7 +285,7 @@ class LetterController extends Controller
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
 
                         $createdOTP = $this->otpRepository->generateOtp($pemohonEmail,$letter->id);
-                        $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $pemohonEmail;
+                        $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $pemohonEmail;
                         Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                         
                         $this->letterRepository->updateLetterStatus($letterId, "letter is approved by  " . $member["role"] . " " . $member["email"] );
