@@ -36,7 +36,7 @@ class LetterController extends Controller
         $this->authRepository = $authRepository;
         $this->notifikasiRepository = $notifikasiRepository;
     }
-// adawdwadwadwadwda
+// adawdwadwadwadwdaawdwaadawadw
     public function getAllArsip(){
 
         try {
