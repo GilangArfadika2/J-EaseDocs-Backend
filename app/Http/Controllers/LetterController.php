@@ -187,7 +187,7 @@ class LetterController extends Controller
     
         // Extract necessary data from the letter object
         $memberArray = json_decode($letter->member, true);
-        $dataArray = json_decode($letter->data, true);
+        // $dataArray = json_decode($letter->data, true);
         $header = 'form';
         // foreach ($dataArray as $data) {
         //     if (isset($data['header'])) {
@@ -370,7 +370,7 @@ class LetterController extends Controller
         // if ($notifikasiNext !== false || $notifikasiNext !== null ){
         //     $notifikasiNext->save();
         // }
-        error_log(json_encode($memberArray));
+        // error_log(json_encode($memberArray));
         $this->letterRepository->updateLetterMember($letterId,$memberArray);
     
         try {
