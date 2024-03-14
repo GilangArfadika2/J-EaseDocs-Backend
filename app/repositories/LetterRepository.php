@@ -11,9 +11,14 @@ class LetterRepository
         return Letter::all();
     }
 
+    public function getLetterMemberById(int $id)
+{
+    return DB::table('letter')->where('id', $id)->value('member');
+}
+
     public function getLetterById(int $id)
     {
-        return Letter::find($id);
+        return DB::table('letter')->where('id', $id)->first();
     }
 
     public function getAllArsip() {

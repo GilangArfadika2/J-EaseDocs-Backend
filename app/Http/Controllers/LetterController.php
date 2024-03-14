@@ -183,10 +183,11 @@ class LetterController extends Controller
         error_log($userId);
     
         // Fetch the letter object
-        $letter = $this->letterRepository->getLetterByID($letterId);
+        // $letter = $this->letterRepository->getLetterByID($letterId);
+        $member = $this->letterRepository->getLetterMemberById($letterId);
     
         // Extract necessary data from the letter object
-        $memberArray = json_decode($letter->member, true);
+        $memberArray = json_decode($member, true);
         // $dataArray = json_decode($letter->data, true);
         $header = 'form';
         // foreach ($dataArray as $data) {
@@ -284,7 +285,7 @@ class LetterController extends Controller
                         
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
 
-                        $createdOTP = $this->otpRepository->generateOtp($pemohonEmail,$letter->id);
+                        $createdOTP = $this->otpRepository->generateOtp($pemohonEmail,$letterId);
                         $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $pemohonEmail;
                         Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
                         
