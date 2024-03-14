@@ -2,7 +2,8 @@
     "version": 2,
       "framework": null,
     "functions": {
-        "api/index.php": { "runtime": "vercel-php@0.6.1" }
+        "api/index.php": { "runtime": "vercel-php@0.6.1" },
+        "maxDuration": 300
     },
     "routes": [{
         "src": "/(.*)",
@@ -30,4 +31,5 @@
         "DB_USERNAME": "sipropensi",
         "DB_PASSWORD": "5ytwpZbO6hEm"
     }
+    
 }
