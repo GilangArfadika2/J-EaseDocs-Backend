@@ -188,13 +188,13 @@ class LetterController extends Controller
         // Extract necessary data from the letter object
         $memberArray = json_decode($letter->member, true);
         $dataArray = json_decode($letter->data, true);
-        $header = '';
-        foreach ($dataArray as $data) {
-            if (isset($data['header'])) {
-                $header = $data['header'];
-                break;
-            }
-        }
+        $header = 'form';
+        // foreach ($dataArray as $data) {
+        //     if (isset($data['header'])) {
+        //         $header = $data['header'];
+        //         break;
+        //     }
+        // }
     
         // Prepare email variables
         $pemohonEmail = '';

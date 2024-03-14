@@ -48,9 +48,9 @@ class NotifikasiRepository
     }
 
     public function create($data)
-{
-    return Notifikasi::create($data);
-}
+    {
+        return DB::table('notifikasi')->insertGetId($data);
+    }
 
 
     public function update($id, $data)
