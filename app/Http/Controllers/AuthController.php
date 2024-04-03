@@ -100,7 +100,7 @@ class AuthController extends Controller
                     time() - 3600, // Expired time in the past
                     '/',
                     null,
-                    true,
+                    false,
                     true,
                     true,
                     'None'

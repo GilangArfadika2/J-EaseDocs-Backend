@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\LetterController;
+use App\Http\Controllers\LetterTemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,11 @@ use App\Http\Controllers\LetterController;
         Route::get('/otp/regenerate/{email}/{id}', [LetterController::class, 'resendOtp']);
         Route::get('/Arsip', [LetterController::class,'getAllArsip']);
         Route::get('/Arsip/{nomorSurat}' , [LetterController::class,'getArsipByID']);
+        Route::post('/template-surat/create', [LetterTemplateController::class, 'CreateLetterTemplate']);
+        Route::patch('/template-surat/update', [LetterTemplateController::class, 'UpdateLetterTemplate']);
+        Route::get('/template-surat', [LetterTemplateController::class, 'index']);
+        Route::get('/template-surat/{id}', [LetterTemplateController::class, 'getLetterTemplateById']);
+        Route::post('/template-surat/attachment', [LetterTemplateController::class, 'fetchFile']);
 
 
 // Additional routes...

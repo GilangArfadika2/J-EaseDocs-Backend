@@ -6,7 +6,7 @@ namespace App\Models;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-class Letter extends Model
+class LetterTemplate extends Model
 {
     use  HasFactory, Notifiable;
 
@@ -16,21 +16,17 @@ class Letter extends Model
      * @var array<int, string>
      */
 
-    protected $table = 'surat';
+    protected $table = 'template_surat';
     public $timestamps = false;
     protected $fillable = [
        'id',
-       'id_template_surat',
-        'data',
-        'status',
-        'nomor_surat',
-        'nama_pemohon',
-        'email_pemohon',
-        'nip_pemohon',
-        'nama_atasan_pemohon',
-        'email_atasan_pemohon',
-        'nip_atasan_pemohon',
-        'approved_at'
+       'id_admin',
+       'id_checker',
+       'id_approval',
+        'perihal',
+        'isian',
+        'priority',
+        'attachment',
         
 
     ];

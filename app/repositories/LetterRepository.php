@@ -13,16 +13,16 @@ class LetterRepository
 
     public function getLetterMemberById(int $id)
 {
-    return DB::table('letter')->where('id', $id)->value('member');
+    return DB::table('surat')->where('id', $id)->value('member');
 }
 
     public function getLetterById(int $id)
     {
-        return DB::table('letter')->where('id', $id)->first();
+        return DB::table('surat')->where('id', $id)->first();
     }
 
     public function getAllArsip() {
-        $listLetter = DB::table('letter')
+        $listLetter = DB::table('surat')
             ->whereNotNull('nomor_surat')
             ->get();
         foreach ($listLetter as &$letter) {
@@ -34,7 +34,7 @@ class LetterRepository
     }
 
     public function getArsipById($nomorSurat) {
-        $letter = DB::table('letter')
+        $letter = DB::table('surat')
             ->where('nomor_surat', $nomorSurat)
             ->first();
             $letter->data = json_decode($letter->data, true);
@@ -45,7 +45,7 @@ class LetterRepository
 
     public function getLetterByBulkId(array $idArray)
     {
-        $listLetter =  DB::table('letter')
+        $listLetter =  DB::table('surat')
         ->whereIn('id',  $idArray)
         ->get();
         foreach ($listLetter as &$letter) {
@@ -64,19 +64,26 @@ class LetterRepository
 
     public function getLetterByNomorSurat($nomorSurat)
     {
-        return DB::table('letter')->where("nomor_surat",$nomorSurat)->first();
+        return DB::table('surat')->where("nomor_surat",$nomorSurat)->first();
     }
 
     public function createLetter(array $data) : Letter
     {
         
-        $tabelTandaTanganData = end($data['data'])['tabel_tandaTangan'];
+        // $tabelTandaTanganData = end($data['data'])['tabel_tandaTangan'];
 
         $createdLetter = Letter::create([
-            // 'approval_email' => $tabelTandaTanganData['valueEmail3'],
-            'status' => "Waiting for " . $tabelTandaTanganData['valueName2'] . " approval",
-            "data" => json_encode($data['data']),
-            "member" => json_encode($data['member']),
+            'id_template_surat' =>  $data['id_template_surat'],
+            'data' => json_encode( $data['data']),
+            'status' => "ongoing",
+            // 'nomor_surat' =>  $data['nomor_surat'],
+            'nama_pemohon' =>  $data['nama_pemohon'],
+            'email_pemohon' =>  $data['email_pemohon'],
+            'nip_pemohon' =>  $data['nip_pemohon'],
+            'nama_atasan_pemohon' =>  $data['nama_atasan_pemohon'],
+            'email_atasan_pemohon' =>  $data['email_atasan_pemohon'],
+            'nip_atasan_pemohon' =>  $data['nip_atasan_pemohon'],
+            'approved_at' => null, // Assuming 'approved_at' is nullable and defaults to null
         ]);
 
         return  $createdLetter;
@@ -130,7 +137,12 @@ class LetterRepository
         {
     $letter = Letter::find($id);
     if ($letter) {
-        $letter->update(["nomor_surat" => $nomor_surat]);
+        if ($nomor_surat != null){
+            $letter->update(["nomor_surat" => $nomor_surat,"approved_at" => now()]);
+        } else {
+            $letter->update(["nomor_surat" => $nomor_surat,"approved_at" => null]);
+        }
+        
         return $letter;
     }
     return null; 

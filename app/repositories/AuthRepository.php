@@ -47,6 +47,12 @@ class AuthRepository
     {
         return User::find($id);
     }
+
+    public function getUserByListId( $listId)
+    {
+        return User::whereIn('id', $listId)->get();
+    }
+
     public function getUserByEmail($email)
     {
         return User::where('email', $email)->first();

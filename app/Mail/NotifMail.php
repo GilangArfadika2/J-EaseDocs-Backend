@@ -13,7 +13,7 @@ class NotifMail extends Mailable
     protected $letterTitle;
     protected $decision ;
     protected $role;
-    protected $email;
+    protected $userString;
     
 
     /**
@@ -21,12 +21,12 @@ class NotifMail extends Mailable
      *
      * @param string $otpCode
      */
-    public function __construct($letterTitle,$decision,$role,$email)
+    public function __construct($letterTitle,$decision,$role,$userString)
     {
         $this->letterTitle= $letterTitle;
         $this->decision = $decision;
         $this->role = $role;
-        $this->email = $email;
+        $this->userString = $userString;
     }
 
     /**
@@ -39,18 +39,18 @@ class NotifMail extends Mailable
         $letterTitle = $this->letterTitle;
         $decision = $this->decision;
         $role = $this->role;
-        $email = $this->email;
+        $userString = $this->userString;
 
         if ($decision === "approved") {
             $this->subject("Letter Approved by $role");
 
-            // Set the HTML content for the email
-            $this->html("<p>you letter with title : $letterTitle is Approved by $role $email </p>");
+            // Set the HTML content for the userString
+            $this->html("<p>you letter with title : $letterTitle is Approved by $role $userString </p>");
         } else {
-            $this->subject("Letter  Rejected by $role $email");
+            $this->subject("Letter  Rejected by $role $userString");
 
-            // Set the HTML content for the email
-            $this->html("<p>you letter with title : $letterTitle is Rejected by $role $email </p>");
+            // Set the HTML content for the userString
+            $this->html("<p>you letter with title : $letterTitle is Rejected by $role $userString </p>");
         }
        
 

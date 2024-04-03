@@ -16,14 +16,15 @@ class Notifikasi extends Model
      * @var array<int, string>
      */
 
-    protected $table = 'notifikasi';
+    protected $table = 'log';
     public $timestamps = false;
     protected $fillable = [
        'id',
         'message',
         'user_id',
         'letter_id',
-        'is_read'
+        'is_read',
+        'decision',
         
 
     ];
