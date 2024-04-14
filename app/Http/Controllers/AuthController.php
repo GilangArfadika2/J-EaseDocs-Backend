@@ -348,6 +348,7 @@ class AuthController extends Controller
 
     public function updateUser(Request $request){
         // $request->merge(['id' => $request->route('id')]);
+        error_log($request->role);
         $validator = Validator::make($request->all(), AuthValidation::getUpdateRules());
         if ($validator->fails()) {
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
