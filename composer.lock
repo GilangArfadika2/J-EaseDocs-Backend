@@ -3140,7 +3140,6 @@
                 "phpoffice/math": "^0.1"
             },
             "require-dev": {
-                "dompdf/dompdf": "^2.0",
                 "ext-gd": "*",
                 "ext-libxml": "*",
                 "ext-zip": "*",
@@ -3153,7 +3152,6 @@
                 "tecnickcom/tcpdf": "^6.5"
             },
             "suggest": {
-                "dompdf/dompdf": "Allows writing PDF",
                 "ext-gd2": "Allows adding images",
                 "ext-xmlwriter": "Allows writing OOXML and ODF",
                 "ext-xsl": "Allows applying XSL style sheet to headers, to main document part, and to footers of an OOXML template",
