@@ -576,7 +576,7 @@ class LetterController extends Controller
             $attachment = $letterTemplate->attachment;
             // Load the DOCX template
             // $templatePath = storage_path("app\\public\\template\\" . $attachment);
-            $templatePath = public_path("template\\" . $attachment);
+            $templatePath = public_path("template/" . $attachment);
 
             
             // Create a TemplateProcessor instance
