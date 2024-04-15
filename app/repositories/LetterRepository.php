@@ -27,7 +27,7 @@ class LetterRepository
             ->get();
         foreach ($listLetter as &$letter) {
             $letter->data = json_decode($letter->data, true);
-            $letter->member = json_decode($letter->member, true);
+            // $letter->member = json_decode($letter->member, true);
         }
 
         return $listLetter;
@@ -38,7 +38,7 @@ class LetterRepository
             ->where('nomor_surat', $nomorSurat)
             ->first();
             $letter->data = json_decode($letter->data, true);
-            $letter->member = json_decode($letter->member, true);
+            // $letter->member = json_decode($letter->member, true);
 
         return $letter;
     }
@@ -50,7 +50,7 @@ class LetterRepository
         ->get();
         foreach ($listLetter as &$letter) {
             $letter->data = json_decode($letter->data, true);
-            $letter->member = json_decode($letter->member, true);
+            // $letter->member = json_decode($letter->member, true);
         }
 
         return $listLetter;

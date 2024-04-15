@@ -21,17 +21,7 @@ class LetterTemplateRepository
 
     public function create(array $attributes,$attachment)
     {
-        // $stringChecker = trim($string, $attributes["id_checker"]);
-
-        // $numberChecker = explode(",", $string);
-
-        // $intArrayChecker = array_map('intval', $numbers);
-
-        // $stringApproval = trim($string, $attributes["id_approvall"]);
-
-        // $numberApproval = explode(",", $string);
-
-        // $intArrayApproval = array_map('intval', $numbers);
+        
 
         $insertedData =  [
             "id_admin" => $attributes["id_admin"],
@@ -61,3 +51,20 @@ class LetterTemplateRepository
         return DB::table($this->table)->where('id', $id)->delete();
     }
 }
+
+
+
+
+
+
+// $stringChecker = trim($string, $attributes["id_checker"]);
+
+        // $numberChecker = explode(",", $string);
+
+        // $intArrayChecker = array_map('intval', $numbers);
+
+        // $stringApproval = trim($string, $attributes["id_approvall"]);
+
+        // $numberApproval = explode(",", $string);
+
+        // $intArrayApproval = array_map('intval', $numbers);
