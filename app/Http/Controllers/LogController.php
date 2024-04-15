@@ -12,7 +12,7 @@ use App\Repositories\OtpRepository;
 use App\Repositories\LogRepository;
 use App\Repositories\AuthRepository;
 use App\Repositories\NotifikasiRepository;
-use Dompdf\Dompdf;
+// use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
 use Ibnuhalimm\LaravelPdfToHtml\Facades\PdfToHtml;
 use Illuminate\Support\Facades\View;
@@ -39,11 +39,10 @@ class LogController extends Controller
     protected $authRepository;
     protected $notifikasiRepository;
     protected $logRepository;
-    public function __construct(LetterRepository $letterRepository,LetterTemplateRepository $letterTemplateRepository, Dompdf  $dompdf , OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository
+    public function __construct(LetterRepository $letterRepository,LetterTemplateRepository $letterTemplateRepository,  OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository
     ,LogRepository $logRepository)
     {
         $this->letterRepository = $letterRepository;
-        $this->dompdf = $dompdf;
         $this->otpRepository = $otpRepository;
         $this->authRepository = $authRepository;
         $this->notifikasiRepository = $notifikasiRepository;
