@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\LetterController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\LetterTemplateController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -56,8 +58,13 @@ use App\Http\Controllers\LetterTemplateController;
         Route::patch('/template-surat/update', [LetterTemplateController::class, 'UpdateLetterTemplate']);
         Route::get('/template-surat', [LetterTemplateController::class, 'index']);
         Route::get('/template-surat/{id}', [LetterTemplateController::class, 'getLetterTemplateById']);
-        Route::post('/template-surat/attachment', [LetterTemplateController::class, 'fetchFile']);
+        // Route::post('/template-surat/attachment', [LetterTemplateController::class, 'fetchFile']);
+        Route::post('/template-surat/attachment', [LetterController::class, 'generateDocument']);
+        Route::get('/letter/barcode/{nomorSurat}', [LetterController::class, 'getLetterBarcodeDetail']);
 
+        Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
+        Route::get('/log/{userId}', [LogController::class, 'getLogSurat']);
+        
 
 // Additional routes...
 

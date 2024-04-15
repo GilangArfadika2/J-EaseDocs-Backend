@@ -11,17 +11,17 @@ class NotifikasiRepository
 {
     public function getAll()
     {
-        return DB::table('log')->get();
+        return DB::table('inbox')->get();
     }
 
     public function getById($id)
     {
-        return DB::table('log')->find($id);
+        return DB::table('inbox')->find($id);
     }
 
     public function deleteNotifikasiByUserIdAndLetterId($userId, $letterId)
     {
-        DB::table('log')
+        DB::table('inbox')
             ->where('user_id', $userId)
             ->where('letter_id', $letterId)
             ->delete();
@@ -29,14 +29,14 @@ class NotifikasiRepository
 
     public function deleteNotifikasiByLetterId( $letterId)
     {
-        DB::table('log')
+        DB::table('inbox')
             ->where('letter_id', $letterId)
             ->delete();
     }
 
     public function deleteNotifikasiByListUserAndLetterId( $listUserId, $letterId)
     {
-        DB::table('log')
+        DB::table('inbox')
         ->whereIn('user_id', $listUserId)
         ->where('letter_id', $letterId)
         ->delete();
@@ -44,12 +44,12 @@ class NotifikasiRepository
 
     public function getNotifikasiByUserId($userId)
     {
-        return DB::table('log')->where('user_id', $userId)->get();
+        return DB::table('inbox')->where('user_id', $userId)->get();
     }
 
     public function getNotifikasiByListUserAndLetterId($listUserId, $letterId)
 {
-    return DB::table('log')
+    return DB::table('inbox')
         ->whereIn('user_id', $listUserId)
         ->where('letter_id', $letterId)
         ->get();
@@ -57,7 +57,7 @@ class NotifikasiRepository
 
     public function getNotifikasiByUserAndLetterId($userId, $letterId)
     {
-        return DB::table('log')
+        return DB::table('inbox')
             ->where('user_id', $userId)
             ->where('letter_id', $letterId)
             ->first();
@@ -65,17 +65,17 @@ class NotifikasiRepository
 
     public function create($data)
     {
-        return DB::table('log')->insertGetId($data);
+        return DB::table('inbox')->insertGetId($data);
     }
 
 
     public function update($id, $data)
     {
-        DB::table('log')->where('id', $id)->update($data);
+        DB::table('inbox')->where('id', $id)->update($data);
     }
 
     public function delete($id)
     {
-        DB::table('log')->where('id', $id)->delete();
+        DB::table('inbox')->where('id', $id)->delete();
     }
 }

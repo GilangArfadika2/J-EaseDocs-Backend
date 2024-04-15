@@ -42,7 +42,7 @@ class NotifMail extends Mailable
         $userString = $this->userString;
 
         if ($decision === "approved") {
-            $this->subject("Letter Approved by $role");
+            $this->subject("Letter Approved by $role  $userString");
 
             // Set the HTML content for the userString
             $this->html("<p>you letter with title : $letterTitle is Approved by $role $userString </p>");

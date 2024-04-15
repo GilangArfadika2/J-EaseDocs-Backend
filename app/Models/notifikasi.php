@@ -16,7 +16,7 @@ class Notifikasi extends Model
      * @var array<int, string>
      */
 
-    protected $table = 'log';
+    protected $table = 'inbox';
     public $timestamps = false;
     protected $fillable = [
        'id',

@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 use Spatie\PdfToText\Pdf;
 use App\Repositories\OtpRepository;
+use App\Repositories\LogRepository;
 use App\Repositories\AuthRepository;
 use App\Repositories\NotifikasiRepository;
-use Dompdf\Dompdf;
+// use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
 use Ibnuhalimm\LaravelPdfToHtml\Facades\PdfToHtml;
 use Illuminate\Support\Facades\View;
@@ -21,23 +22,33 @@ use App\Mail\OtpMail;
 use App\Models\Notifikasi;
 use App\Mail\NotifMail;
 use App\Repositories\LetterTemplateRepository;
-
+use Docxtemplater\Docxtemplater;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use PhpOffice\PhpWord\TemplateProcessor;
+use TCPDF;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Carbon\Carbon;
+use App\Models\Log;
 class LetterController extends Controller
 {
     protected $letterRepository;
     protected $letterTemplateRepository;
-    protected $dompdf;
+    // protected $dompdf;
     protected $otpRepository;
     protected $authRepository;
     protected $notifikasiRepository;
-    public function __construct(LetterRepository $letterRepository,LetterTemplateRepository $letterTemplateRepository, Dompdf  $dompdf , OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository)
+    protected $logRepository;
+    public function __construct(LetterRepository $letterRepository,LetterTemplateRepository $letterTemplateRepository , OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository
+    ,LogRepository $logRepository)
     {
         $this->letterRepository = $letterRepository;
-        $this->dompdf = $dompdf;
+        // $this->dompdf = $dompdf;
         $this->otpRepository = $otpRepository;
         $this->authRepository = $authRepository;
         $this->notifikasiRepository = $notifikasiRepository;
         $this->letterTemplateRepository = $letterTemplateRepository;
+        $this->logRepository = $logRepository;
     }
 // adawdwadwadwadwdaawdwaadawadw
     public function getAllArsip(){
@@ -79,30 +90,62 @@ class LetterController extends Controller
     
     }
 
+    public function getLetterBarcodeDetail($nomorSurat){
+
+        try {
+
+            $letter = $this->letterRepository->getArsipById($nomorSurat);
+            $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
+           
+            $trimmedStringApproval = trim($letterTemplate->id_approval, '{}');
+            $integerApproval = explode(',', $trimmedStringApproval);
+            $listApprovalId = array_map('intval', $integerApproval);
+            $listUserName = [];
+            foreach ($listApprovalId as $id_approval) {
+                $user = $this->authRepository->getUserById( $id_approval);
+                $listUserName[] = $user->name . " (" . $user->jabatan . ")";
+            }
+            $approvalString = implode(', ', $listUserName);
+            if  ($letter === null) {
+                return response()->json(['message' => 'letter not found' ],400);
+            }
+            $data = ["nomor_surat" => $letter->nomor_surat , "perihal" => $letterTemplate->perihal,"approval" =>  $approvalString , "tanggal_penyetujuan" => $letter->approved_at ];
+            return response()->json(['message' => 'letter fetched succesfully' , 'data' => $data],200);
+        }  catch (Exception $e){
+
+            return response()->json(['message' => $e ],500);
+        }
+    
+    }
+
 
     public function CreateLetter(Request $request){
 
-        try {
+        try { 
+           
             $data = $request->all();
             $validator = Validator::make($data, LetterValidation::createLetterRules());
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
+           // Access nested data safely
+            $formData = $request->input('data');
+
+            // Retrieve dynamic validation rules
+            $formField = $this->letterTemplateRepository->getById($request->input("id_template_surat"))->isian;
+            $rules = json_decode($formField, true);
+
+            // Validate nested data against dynamic rules
+            $formDataValidator = Validator::make($formData, $rules);
+
+            if ($formDataValidator->fails()) {
+                return response()->json(['message' => 'input json is not validated', 'errors' => $formDataValidator->errors()], 400);
+            }
+
            $letter = $this->letterRepository->createLetter($data);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
            $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
-        //    foreach ($data['member'] as $member) {
-
-        //     if ($member['decision'] === 'on-progress' && $member['role'] === 'atasan_pemohon') {
-        //         // error_log($letter->id);
-        //         $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
-        //         $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
-        //         // error_log($link);
-        //         Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
-        //         break;
-        //     }
-        // }
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
@@ -182,26 +225,19 @@ class LetterController extends Controller
         $role = $request->input('role');
         $letterId = $request->input('letter_id');
         $email = $request->input('email');
-        $userId = 0;
-        if ($role === "checker" || $role === "approval"){
-            $userId = $this->authRepository->getUserByEmail($email)->id;
-        }
-        error_log($userId);
+        // error_log($email);
+        
+        // error_log($userId);
         $letter = $this->letterRepository->getLetterByID($letterId);
         $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
-        $header = "form " .  $letterTemplate->perihal;
-        // foreach ($dataArray as $data) {
-        //     if (isset($data['header'])) {
-        //         $header = $data['header'];
-        //         break;
-        //     }
-        // }
+        $header =   $letterTemplate->perihal;
+
 
         $notifikasiNext = false ;
         $notifikasi = false;
 
         $isDecisionAssigned = false;
-        error_log($letterTemplate->id_approval );
+        // error_log($letterTemplate->id_approval );
       
         $trimmedStringChecker = trim($letterTemplate->id_checker, '{}');
         $integerChecker = explode(',', $trimmedStringChecker);
@@ -210,6 +246,26 @@ class LetterController extends Controller
         $trimmedStringApproval = trim($letterTemplate->id_approval, '{}');
         $integerApproval = explode(',', $trimmedStringApproval);
         $listApprovalId = array_map('intval', $integerApproval);
+
+        $userId = 0;
+        if ($role === "checker" || $role === "approval"){
+            $existingUser = $this->authRepository->getUserByEmail($email);
+            if ($existingUser->role !== $role) {
+                return response()->json(['message' => "invalid email"], 400);
+            }
+            $listLetterUser = [];
+            if ($role =="checker"  ){
+                $listLetterUser =  $listCheckerId;
+                
+            } else {
+                $listLetterUser = $listApprovalId;
+            }
+            if (!in_array($existingUser->id, $listLetterUser)) {
+                return response()->json(['message' => "user is unauthorized to give approval to letter"], 400);
+            }
+            $userId = $existingUser->id;
+            
+        }
 
         if ($role == "atasan_pemohon"){
             if( $decision == "approved"){
@@ -223,6 +279,7 @@ class LetterController extends Controller
                     $notifikasiArray = $notifikasi->getAttributes();
                     $this->notifikasiRepository->create( $notifikasiArray);
                 }   
+
             } else {
                  $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listCheckerId, $letterId);
 
@@ -233,7 +290,7 @@ class LetterController extends Controller
             Mail::to($letter->email_pemohon)->send(new NotifMail($header, $decision, $role,  $userString ));
             
         } else {
-            $notifikasi =  $this->notifikasiRepository->getNotifikasiByUserAndLetterId($userId, $letterId);;
+            $notifikasi =  $this->notifikasiRepository->getNotifikasiByUserAndLetterId($userId, $letterId);
 
             $notifikasi->decision = $decision;
             
@@ -251,6 +308,8 @@ class LetterController extends Controller
             $listNotifikasi =  $this->notifikasiRepository->getNotifikasiByListUserAndLetterId($listUserId, $letterId);
             $isFinalized = true;
             $isRejected = false;
+            $listUserRejected = [];
+            $listUserAccepted = [];
             $listUser = [];
 
             foreach ( $listNotifikasi as $notifikasi){
@@ -259,15 +318,25 @@ class LetterController extends Controller
                     break;
                 } else if ($notifikasi->decision == "rejected"){
                     $isRejected = true;
-                    $listUser[] =$this->authRepository->getUserById($notifikasi->user_id)->name;
+                    $listUserRejected[] =$this->authRepository->getUserById($notifikasi->user_id)->name;
+                } else {
+                    $listUserAccepted[] =$this->authRepository->getUserById($notifikasi->user_id)->name;
                 }
             }
+            if (!$isRejected){
+                $listUser =  $listUserAccepted;
+            } else {
+                $listUser =  $listUserRejected;
+            }
             if ($isFinalized){
-                $listUserString = implode(', ', $listUser);
-                Mail::to($letter->email_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString )); 
-                 Mail::to($letter->email_atasan_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString ));   
+                
+                
                 if (!$isRejected){
+                     $listUserString = implode(', ', $listUser);
+                        Mail::to($letter->email_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString )); 
+                          Mail::to($letter->email_atasan_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString )); 
                     if ($role === "checker"){
+                        
                         foreach ( $listApprovalId as $id_approval){
                             $notifikasi = new Notifikasi();
                             $notifikasi->user_id = $id_approval;
@@ -277,24 +346,58 @@ class LetterController extends Controller
                             $notifikasiArray = $notifikasi->getAttributes();
                             $this->notifikasiRepository->create( $notifikasiArray);
                         }   
+                        $logChecker = new Log();
+                        $logChecker->letter_id = $letterId;
+                        $logChecker->status ="approved";
+                        $logChecker->user_id = $letterTemplate->id_checker;
+
+                        $this->logRepository->create($logChecker->getAttributes());
+
                     } else {
                         $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
                         $createdOTP = $this->otpRepository->generateOtp($letter->email_pemohon,$letterId);
                         $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
                         //                 Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
+                        $log = new Log();
+                        $log->letter_id = $letterId;
+                        $log->status ="approved";
+                        $log->user_id = $letterTemplate->id_approval;
+                        $this->logRepository->create($log->getAttributes());
                     }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
                     // $userString =  $letter->nama_atasan_pemohon . " NIP : " . $letter->nip_atasan_pemohon;
                     // Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role,  $userString ));
                 } else {
+
+                    $listUserString = implode(', ', $listUser);
+                    Mail::to($letter->email_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString )); 
+                        Mail::to($letter->email_atasan_pemohon)->send(new NotifMail($header, $decision, $role,  $listUserString )); 
+
                      $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
+                    
+                     $log = new Log();
+                     $log->letter_id = $letterId;
+                     $log->status = "rejected";
+                     if ($role == "checker"){
+                        $log->user_id = $letterTemplate->id_checker;
+                     } else {
+                        $log->user_id = $letterTemplate->id_approval;
+                     }
+                     $this->logRepository->create($log->getAttributes());
                 }
             } else {
+               
+                $log = new Log();
+                $log->letter_id = $letterId;
+                $log->status = "rejected";
                 if ($role == "checker"){
                     $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
+                    $log->user_id = $letterTemplate->id_checker;
+                } else {
+                    $log->user_id = $letterTemplate->id_approval;
                 }
                 // $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
                 $this->letterRepository->updateLetterNomorSurat($letterId,null);
@@ -349,6 +452,22 @@ class LetterController extends Controller
     }
 
     public function getLetterByID(Request $request){
+
+        try {
+            $id = $request->input('id');
+            $letter = $this->letterRepository->getLetterByID($id);
+    
+            // Decode the JSON data
+            $letter->data = json_decode($letter->data);
+            $letter->member = json_decode($letter->member);
+    
+            return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+    }
+
+    public function getLetterFileByID(Request $request){
 
         try {
             $id = $request->input('id');
@@ -420,7 +539,7 @@ class LetterController extends Controller
     //    $return response()->json()
     // }
     public function generateNomorSurat($length) {
-        // Calculate the number of bytes required to encode the desired length of characters
+        
         $numBytes = $length * 6 / 8;
         if ($length % 8 != 0) {
             $numBytes++;
@@ -441,240 +560,128 @@ class LetterController extends Controller
         return $encoded;
     }
 
+
     
 
-//     public function generatePDF() {
-//     // $filename = 'example2.pdf';
-//     // $directory = public_path('arsip');
+    public function generateDocument(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), LetterValidation::GetLetterAttachment());
+            if ($validator->fails()) {
+                return response()->json(['message' => $validator->errors()], 400);
+            }
 
-//     // // Create the directory if it doesn't exist
-//     // if (!File::exists($directory)) {
-//     //     File::makeDirectory($directory, 0755, true, true);
-//     // }
+            $letter = $this->letterRepository->getLetterById($request->input("letter_id"));
+            $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
+            $attachment = $letterTemplate->attachment;
+            // Load the DOCX template
+            $templatePath = storage_path("app\\public\\template\\" . $attachment);
 
-//     // // Create an instance of Dompdf
-//     // $dompdf = new \Dompdf\Dompdf();
-    
-//     // // Load HTML content from the file
-//     // $html = file_get_contents(public_path('html/generated_document.html'));
-    
-//     // // Load HTML into Dompdf
-//     // $dompdf->loadHtml($html);
-    
-//     // // Set paper size and orientation
-//     // $dompdf->setPaper('A4', 'portrait');
-    
-//     // // Render the PDF
-//     // $dompdf->render();
-    
-//     // // Output PDF
-//     // $output = $dompdf->output();
-    
-//     // // Save PDF to public directory
-//     // $filePath = $directory . '/' . $filename;
-//     // $result = file_put_contents($filePath, $output);
-
-//     // if ($result === false) {
-//     //     return response()->json(['error' => 'Failed to save PDF file']);
-//     // }
-    
-//     // // Return the filename or any other response you need
-//     // return response()->json(['message' => 'PDF generated successfully', 'filename' => $filename]);
-//     $content = View::make('dokumen')->render();
-
-//     // Instantiate Dompdf
-//     $dompdf = new Dompdf();
-
-//     // Load HTML content
-//     $dompdf->loadHtml($content);
-
-//     // (Optional) Set paper size and orientation
-//     $dompdf->setPaper('A4', 'portrait');
-
-//     // Render the HTML as PDF
-//     $dompdf->render();
-
-//     // Output the generated PDF to Browser
-//     return $dompdf->stream('document.pdf');
-// }
-//     public function getDocument(){
-        
-//         return view("dokumen");
-//     }
-}
- // // error_log($memberCount);
-        // for ($i = 0; $i < $memberCount; $i++) {
-        //     $member = &$memberArray[$i];
-        //     switch ($member['role']) {
-        //         case 'pemohon':
-        //             $pemohonEmail = $member['email'];
-        //             // break;
-        //         case 'atasan_pemohon':
-        //             $atasanPemohonEmail = $member['email'];
-        //             // break;
-        //         case 'checker':
-        //             $checkerEmail = $member['email'];
-        //             // break;
-        //         case 'approval':
-        //             $approvalEmail = $member['email'];
-        //             // break;
-        //     }
-
-        //     if ($role === $member["role"] && $email === $member["email"] ){
-        //         $member['decision'] = $decision;
-        //         $isDecisionAssigned = true;
-        //     }
-
-        //     if ($isDecisionAssigned){
-        //         if ($decision === 'rejected') {
-        //             $message = "letter is rejected by " . $role . " " . $member["email"];
-
-
-        //             if ($role == "atasan_pemohon"){
-        //                 $this->notifikasiRepository->deleteNotifikasiByLetterId($letterId);
-        //             }
-
-        //             if ($role === "checker") {
-        //                 $approvalRecord = $memberArray[$memberCount-1];
-        //                 $approvalId = $this->authRepository->getUserByEmail($approvalRecord["email"])->id;
-        //                 $this->notifikasiRepository->deleteNotifikasiByUserIdAndLetterId($approvalId,$letterId);
-        //             }
-
-        //             $this->letterRepository->updateLetterStatus($letterId, "letter is rejected by " . $role . " " . $member["email"]);
-
-        //             // $notifikasi->message = $message;
-        //             // $notifikasi->save();
-
-        //         } else  if  ($decision === "on-progress"){
-        //             $message ="waiting for " . $member["role"] . " " . $member["email"] . " approval";
-
-        //             if ($role == "atasan_pemohon"){
-        //                 $this->notifikasiRepository->deleteNotifikasiByLetterId($letterId);
-                       
-        //                 $createdOTP = $this->otpRepository->generateOtp($member['email'],$letter->id);
-        //                 $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
-        //                 // error_log($link);
-        //                 Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
-        //             }
-
-        //             if ($role === "checker") {
-        //                 $approvalRecord = $memberArray[$memberCount-1];
-        //                 $approvalId = $this->authRepository->getUserByEmail($approvalRecord["email"])->id;
-        //                 $this->notifikasiRepository->deleteNotifikasiByUserIdAndLetterId($approvalId,$letterId);
-        //             }
-
-        //             $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $member["role"] . " " . $member["email"] . " approval");
-                    
-        //             // $notifikasi->message = $message;
-        //             // $notifikasi->save();
-        //         }
-        //         else {
-
-        //             if ($i + 1 >= $memberCount) {
-        //                 $message ="letter is approved by  " . $member["role"] . " " . $member["email"];
-        //                 // $notifikasi->message = $message;
-        //                 // $notifikasi->save();
-
-        //                 $nomorSurat = $this->generateNomorSurat(10);
-                        
-        //                 $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
-
-        //                 $createdOTP = $this->otpRepository->generateOtp($pemohonEmail,$letterId);
-        //                 $link = "https://j-easedocs-frontend.vercel.app/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $pemohonEmail;
-        //                 Mail::to($createdOTP['email'])->send(new OtpMail($createdOTP['code'] , $link));
-                        
-        //                 $this->letterRepository->updateLetterStatus($letterId, "letter is approved by  " . $member["role"] . " " . $member["email"] );
-                    
-        //             } else {
-
-        //                 $nextChecker = $memberArray[$i+1];
-        //                 error_log(json_encode($nextChecker));
-        //                 error_log(json_encode($member));
-
-        //                 $message = "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval";
-                        
-        //                 $nextId = $this->authRepository->getUserByEmail( $nextChecker["email"])->id;
-        //                 $messageNext = "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval";
-
-        //                 $notifikasiNext = $this->notifikasiRepository->getNotifikasiByUserAndLetterId($nextId, $letterId);
-        //                 if ($notifikasiNext === null) {
-        //                     $notifikasiNext = new Notifikasi();
-        //                     $notifikasiNext->user_id = $nextId;
-        //                     $notifikasiNext->letter_id = $letterId;
-        //                     $notifikasiNext->message = $messageNext;
-
-        //                     // $notifikasiNextArray = (array) $notifikasiNext;
-        //                     // $this->notifikasiRepository->create( $notifikasiNext);
-        //                     $notifikasiNext->save();
-
-        //                 } else {
-        //                     $notifikasiNext->message = $messageNext;
-        //                     $notifikasiNextArray = (array) $notifikasiNext;
-        //                     $this->notifikasiRepository->update($notifikasiNext->id,$notifikasiNextArray);
-        //                     // $notifikasiNext->save();
-        //                 }
-                        
-        //                 $this->letterRepository->updateLetterStatus($letterId, "waiting for " . $nextChecker["role"] . " " . $nextChecker["email"] . " approval");
-        //             }
-
-                  
-                  
-        //         }
-        //         if ($role === "checker" || $role ==="approval"){
-        //             if ($decision === "approved"){
-        //                 $message ="letter is approved by  " . $member["role"] . " " . $member["email"];
-        //             } else if ($decision === "rejected"){
-        //                 $message = "letter is rejected by " . $role . " " . $member["email"];
-        //             } else {
-        //                 $message ="waiting for " . $member["role"] . " " . $member["email"] . " approval";
-        //             }
-        //             $notifikasi = $this->notifikasiRepository->getNotifikasiByUserAndLetterId($userId, $letterId);
-                   
-        //             if ($notifikasi === null) {
-        //                 $notifikasi = new Notifikasi();
-        //                 $notifikasi->user_id = $nextId;
-        //                 $notifikasi->letter_id = $letterId;
-        //                 $notifikasi->message = $messageNext;
-
-        //                 $notifikasiArray = (array) $notifikasi;
-        //                 // $this->notifikasiRepository->create( $notifikasiArray);
-        //                 $notifikasi->save();
-
-        //             } else {
-        //                 $notifikasi->message = $message;
-        //                 $notifikasiArray = (array) $notifikasi;
-        //                 $this->notifikasiRepository->update($notifikasi->id,$notifikasiArray);
-        //                 // $notifikasi->save();
-        //             }
-        //             // if ($notifikasiNext){
-        //             //     $notifikasiNext->save();
-        //             // }
-
-        //         }
-        //         break;
-        //     }
             
+            // Create a TemplateProcessor instance
+            $templateProcessor = new TemplateProcessor($templatePath);
 
-        // }
-        // if (!$isDecisionAssigned){
-        //     return response()->json(['message' => 'Member Record Not Found'], 400);
-        // }
-        // // if ($notifikasi !== false || $notifikasi !== null ){
-        // //     $notifikasi->save();
-        // // }
-        // // if ($notifikasiNext !== false || $notifikasiNext !== null ){
-        // //     $notifikasiNext->save();
-        // // }
-        // // error_log(json_encode($memberArray));
-        // $this->letterRepository->updateLetterMember($letterId,$memberArray);
+            
+            // Define data to render
+            $data =  json_decode( $letter->data ,true);
+
+            // Fill the template with data
+            foreach ($data as $key => $value) {
+                // error_log($value);
+                
+                // $templateProcessor->setValue($key, $value);
+                if (is_array($value)) {
+                    // If $value is an array, assume it represents data for cloning rows in a table
+                    $rowCount = count($value);
+                    // Clone the row in the table identified by $key for each item in the array
+                    $templateProcessor->cloneRow($key, $rowCount);
+                    // Loop through each item in the array and set the values in the cloned rows
+                    foreach ($value as $index => $item) {
+                        foreach ($item as $itemKey => $itemValue) {
+                            error_log($itemKey . ": ". $itemValue);
+                            if ($itemKey !== $key){
+                                 // Set the value in the |template for each item attribute
+                                $templateProcessor->setValue($itemKey . '#' . ($index + 1), $itemValue);
+                            }
+                            // Assuming attributes are named as attribute_1, attribute_2, ...
+                        }
+                        $templateProcessor->setValue($key . '#' . ($index + 1),$index + 1 );
+                    }
+                } else {
+                    error_log($value);
+                    $templateProcessor->setValue($key, $value);
+                }
+            }
+            $tanggal_permohonan = Carbon::parse($letter->created_at)->translatedFormat('d F Y');
+            $templateProcessor->setValue("tanggal_permohonan", $tanggal_permohonan);
+            $templateProcessor->setValue("tanggal_permohonan", $letter->created_at);
+            $templateProcessor->setValue("keputusan", $letter->status);
+            if ($letter->approved_at != null){
+                $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
+                 $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
+            } else {
+                $templateProcessor->setValue("tanggal_penyetujuan", "");
+            }
+            $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
+            $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
+            $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
+            $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
+            $id_approval = $letterTemplate->id_approval;
+            $id_approval = (int) str_replace(array('{', '}'), '', $id_approval);
+            $approval = $this->authRepository->getUserById($id_approval);
+            $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+            $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+
+            if ($letter->nomor_surat != null){
+                $link = 'http://localhost:8000/api/letter/barcode/' . $letter->nomor_surat;
+
+                                // Generate a QR code
+                $qrCode = new QrCode($link);
+                $qrCodeFilePath = public_path("qrcode" . "_". $letter->id . ".png");
+
+                $writer = new PngWriter();
+
+                // Write the QR code to a file
+                $result = $writer->write($qrCode);
+                $result->saveToFile($qrCodeFilePath );
+                $templateProcessor->setImageValue('barcode', array('path' => $qrCodeFilePath, 'width' => 200, 'height' => 200));
+            } else {
+                $templateProcessor->setValue('barcode',"not yet assigned");
+            }
+
+            // Save the filled DOCX file
+            $outputPath = public_path($attachment . "_" . $letter->id . ".docx");
+            $templateProcessor->saveAs($outputPath);
+
+
     
-        // try {
-        //     if ($role === 'atasan_pemohon') {
-        //         Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
-        //     } else {
-        //         Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
-        //         Mail::to($atasanPemohonEmail)->send(new NotifMail($header, $decision, $role, $email));
-        //     }
-        // } catch (Exception $e) {
-        //     return response()->json(['error' => 'Failed to send notification emails'], 500);
-        // }
+            // Path to the output PDF file
+            $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
+
+            // Command to convert DOCX to PDF using LibreOffice
+            $command = "soffice --headless --convert-to pdf \"$outputPath\" --outdir \"" . dirname($pdfPath) . "\" 2>&1";
+
+            // Execute the command
+            exec($command, $output, $returnCode);
+
+            
+            if ($returnCode === 0) {
+                // Read the PDF content
+                $pdfContent = file_get_contents($pdfPath);
+
+                // Return the PDF content or handle it accordingly
+                return response()->json(['message'=> "attachment fetched succesfully",'pdf_content' => base64_encode($pdfContent)], 200);
+            } else {
+                // Command execution failed, handle the error
+                return response()->json(['Error' => "Error executing LibreOffice command: " . implode("\n", $output)], 500);
+                
+            }
+    
+
+            // return response()->json(['message' => 'Document generated successfully'], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+    }
+
+}

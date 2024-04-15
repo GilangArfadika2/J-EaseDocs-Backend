@@ -66,13 +66,19 @@ class LetterTemplateController extends Controller
     public function CreateLetterTemplate(Request $request)
     {
         if ($request->hasFile('attachment')) {
+           
+            
+            
                 $file = $request->file('attachment');
 
                 $fileName =  $file->getClientOriginalName();
+                $directory = 'public/template';
 
-            
-                $file->storeAs('uploads', $fileName);
+              
+                Storage::makeDirectory($directory);
 
+                
+                Storage::putFileAs($directory, $file, $fileName);
             $validationRules = [
                 'id_admin' => 'required|numeric|exists:user,id',
                 'id_checker' => 'required|string',
@@ -133,5 +139,21 @@ class LetterTemplateController extends Controller
             return response()->json(['message' => 'Template not found'], 404);
         }
         return response()->json(['message' => 'Template deleted'], 200);
+    }
+
+    public function convertWordToPdf() {
+        $domPdfPath = base_path('vendor/dompdf/dompdf');
+        \PhpOffice\PhpWord\Settings::setPdfRendererPath($domPdfPath);
+        \PhpOffice\PhpWord\Settings::setPdfRendererName('DomPDF');
+    
+        // Load the Word file
+        $content = \PhpOffice\PhpWord\IOFactory::load(public_path('output.docx'));
+    
+        // Save it as a PDF
+        $pdfWriter = \PhpOffice\PhpWord\IOFactory::createWriter($content, 'PDF');
+        $pdfWriter->save('pdf/output (6).pdf');
+    
+        // // Optionally, return a response or redirect
+        // return response()->download(public_path('path/to/save/yourfile.pdf'));
     }
 }

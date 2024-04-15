@@ -22,7 +22,7 @@ class AuthRepository
         User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'nomorpegawai' => $validatedData['nomorpegawai'],
+            'nip' => $validatedData['nip'],
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
         ]);
@@ -106,13 +106,14 @@ class AuthRepository
 
     }
 
-    public function UpdateUser( $id, Array $validatedCredentials): User {
+    public function updateUser( $id, Array $validatedCredentials): User {
+        error_log("yeay" . $validatedCredentials['role']);
 
         $user = $this->getUserById($id);
 
         $user->name = $validatedCredentials['name'];
         $user->email = $validatedCredentials['email'];
-        $user->nomorpegawai= $validatedCredentials['nomorpegawai'];
+        $user->nip= $validatedCredentials['nip'];
         // $user->password = $validatedCredentials['password'];
         $user->role = $validatedCredentials['role'];
         $user->jabatan= $validatedCredentials['jabatan'];
