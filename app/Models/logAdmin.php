@@ -15,7 +15,7 @@ class LogAdmin extends Model
      *
      * @var array<int, string>
      */
-
+// km
     protected $table = 'log_admin';
     public $timestamps = false;
     protected $fillable = [

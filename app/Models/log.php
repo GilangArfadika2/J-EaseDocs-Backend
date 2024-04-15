@@ -15,7 +15,7 @@ class Log extends Model
      *
      * @var array<int, string>
      */
-
+// wdaddaaa
     protected $table = 'log_surat';
     public $timestamps = false;
     protected $fillable = [
