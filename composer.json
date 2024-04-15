@@ -9,7 +9,6 @@
         "bacon/bacon-qr-code": "*",
         "barryvdh/laravel-snappy": "^1.0",
         "doctrine/annotations": "^2.0",
-        "dompdf/dompdf": "^2.0",
         "endroid/qr-code": "^5.0",
         "guzzlehttp/guzzle": "^7.2",
         "ibnuhalimm/laravel-pdf-to-html": "^1.1",
