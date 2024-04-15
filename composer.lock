@@ -3140,6 +3140,7 @@
                 "phpoffice/math": "^0.1"
             },
             "require-dev": {
+                "dompdf/dompdf": "^2.0",
                 "ext-gd": "*",
                 "ext-libxml": "*",
                 "ext-zip": "*",
@@ -3152,6 +3153,7 @@
                 "tecnickcom/tcpdf": "^6.5"
             },
             "suggest": {
+                "dompdf/dompdf": "Allows writing PDF",
                 "ext-gd2": "Allows adding images",
                 "ext-xmlwriter": "Allows writing OOXML and ODF",
                 "ext-xsl": "Allows applying XSL style sheet to headers, to main document part, and to footers of an OOXML template",
@@ -4125,16 +4127,16 @@
         },
         {
             "name": "spomky-labs/otphp",
-            "version": "11.2.1",
+            "version": "11.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Spomky-Labs/otphp.git",
-                "reference": "e256e1bc4e31c8fe7fb5cfde8ca7c3bbb179745e"
+                "reference": "b737d1c6330beae7c0bc225d3e848805b352fe42"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/e256e1bc4e31c8fe7fb5cfde8ca7c3bbb179745e",
-                "reference": "e256e1bc4e31c8fe7fb5cfde8ca7c3bbb179745e",
+                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/b737d1c6330beae7c0bc225d3e848805b352fe42",
+                "reference": "b737d1c6330beae7c0bc225d3e848805b352fe42",
                 "shasum": ""
             },
             "require": {
@@ -4189,7 +4191,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Spomky-Labs/otphp/issues",
-                "source": "https://github.com/Spomky-Labs/otphp/tree/11.2.1"
+                "source": "https://github.com/Spomky-Labs/otphp/tree/11.2.2"
             },
             "funding": [
                 {
@@ -4201,7 +4203,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2024-04-14T16:45:47+00:00"
+            "time": "2024-04-15T07:35:15+00:00"
         },
         {
             "name": "stella-maris/clock",
