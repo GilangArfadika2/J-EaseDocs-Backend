@@ -52,6 +52,7 @@ class LogController extends Controller
 
     public function index()
     {
+        // test
         $logs = $this->logRepository->getAll();
         return response()->json($logs);
     }
