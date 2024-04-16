@@ -650,13 +650,13 @@ class LetterController extends Controller
                 $templateProcessor->setValue('barcode',"not yet assigned");
             }
 
-            // Save the filled DOCX file
+            
             $outputPath = public_path($attachment . "_" . $letter->id . ".docx");
             $templateProcessor->saveAs($outputPath);
 
 
     
-            // Path to the output PDF file
+           
             $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
 
             // Command to convert DOCX to PDF using LibreOffice
@@ -667,11 +667,12 @@ class LetterController extends Controller
 
             
             if ($returnCode === 0) {
-                // Read the PDF content
+                // Get Docx and PDF Contents
                 $pdfContent = file_get_contents($pdfPath);
+                $docxContent = file_get_contents($outputPath);
 
                 // Return the PDF content or handle it accordingly
-                return response()->json(['message'=> "attachment fetched succesfully",'pdf_content' => base64_encode($pdfContent)], 200);
+                return response()->json(['message'=> "attachment fetched succesfully",'pdf_content' => base64_encode($pdfContent), 'docx_content' => base64_encode($docxContent)  ], 200);
             } else {
                 // Command execution failed, handle the error
                 return response()->json(['Error' => "Error executing LibreOffice command: " . implode("\n", $output)], 500);
