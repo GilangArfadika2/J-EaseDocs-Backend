@@ -57,10 +57,11 @@ class LogController extends Controller
         return response()->json($logs);
     }
 
-    public function getLogSurat($userId)
+    public function getLogSurat($letterId)
     {
         try {
-            $listLog = $this->logRepository->getlistLogByUserId($userId);
+            // $listLog = $this->logRepository->getlistLogByUserId($userId);
+            $listLog = $this->logRepository->getLogById($letterId);
             
             return response()->json(['message' => 'log fetched succesfully' , 'data' =>  $listLog],200);
         } catch (Exception $e){

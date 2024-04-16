@@ -73,4 +73,33 @@ class LogRepository
 
         return  $logString ;
     }
+
+    public function getLogById($letterId)
+    {
+        // $user = $this->authRepository->getUserById( $);
+        $ListLogSurat = $this->model->where('letter_id',$letterId)->orderBy('createdAt', 'desc')->get();
+        $logString = [];
+        $letter = $this->letterRepository->getLetterByID($letterId);
+        $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
+        foreach ($ListLogSurat as $logSurat){
+            $trimmedStringUser = trim($logSurat->user_id, '{}');
+            $integerUser = explode(',', $trimmedStringUser);
+            $listUserId = array_map('intval', $integerUser);
+            
+            $listUserName = [];
+            foreach ($listUserId as $user_id) {
+                $user = $this->authRepository->getUserById( $user_id);
+                $listUserName[] = $user->name . " (" . $user->jabatan . ")";
+            }
+            $userString = implode(', ', $listUserName);
+            $logString[] = $letterTemplate->perihal . " by pemohon " . $letter->nama_pemohon . " (NIP : " . $letter->nip_pemohon . ")" . 
+            " has been " . $logSurat->status . " By ". $user->role  . " " . $userString . " at " . $logSurat->createdAt;
+        }
+
+        $logString[] = $letterTemplate->perihal . " by pemohon " . $letter->nama_pemohon . " (NIP : " . $letter->nip_pemohon . ")" . 
+        " has been " . "created at " . $letter->created_at;
+        
+
+        return  $logString ;
+    }
 }

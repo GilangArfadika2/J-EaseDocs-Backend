@@ -63,7 +63,7 @@ use App\Http\Controllers\LetterTemplateController;
         Route::get('/letter/barcode/{nomorSurat}', [LetterController::class, 'getLetterBarcodeDetail']);
 
         Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
-        Route::get('/log/{userId}', [LogController::class, 'getLogSurat']);
+        Route::get('/log/{letterId}', [LogController::class, 'getLogSurat']);
         
 
 // Additional routes...
