@@ -671,7 +671,7 @@ class LetterController extends Controller
                 $pdfContent = file_get_contents($pdfPath);
                 $docxContent = file_get_contents($outputPath);
 
-                // Return the PDF content or handle it accordingly
+                // Return the PDF content or handle it accordingl
                 return response()->json(['message'=> "attachment fetched succesfully",'pdf_content' => base64_encode($pdfContent), 'docx_content' => base64_encode($docxContent)  ], 200);
             } else {
                 // Command execution failed, handle the error
