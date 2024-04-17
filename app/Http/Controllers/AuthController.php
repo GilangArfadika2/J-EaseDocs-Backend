@@ -69,9 +69,9 @@ class AuthController extends Controller
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
                 null,        // Domain (null for any domain)
-                 false,        // Secure (set to true if using HTTPS)
+                 true,        // Secure (set to true if using HTTPS)
                 true,        // HTTP-only flag
-                true,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
+                false,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
                 'None'       // SameSite attribute set to 'None'
             );
         } catch (ValidationException $e) {
