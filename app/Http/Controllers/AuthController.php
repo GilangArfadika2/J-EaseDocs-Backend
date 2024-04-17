@@ -75,6 +75,7 @@ class AuthController extends Controller
                 'None'       // SameSite attribute set to 'None'
             );
         } catch (ValidationException $e) {
+            error_log("error : " . $e);
             return response()->json(['message' => 'Login failed', 'errors' => $e->errors()], 400);
         }
     }

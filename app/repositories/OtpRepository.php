@@ -37,11 +37,12 @@ class OtpRepository
     public function verifyOtp($id, $otp)
     {
         $ExistingOtp = $this->getOtpById($id);
+        error_log($ExistingOtp);
         if ($otp && $otp ==  $ExistingOtp->code) {
-            if (Carbon::now()->lt($ExistingOtp->expired_at)){
+            // if (Carbon::now()->lt($ExistingOtp->expired_at)){
                 $ExistingOtp -> delete();
                 return [$ExistingOtp->letter_id, true];
-            }
+            // }
         }
 
         return [$ExistingOtp->letter_id, false];
