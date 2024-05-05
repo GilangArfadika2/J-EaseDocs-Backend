@@ -186,8 +186,7 @@ class LetterController extends Controller
 
 
 
-    public function verifyOTP(Request $request)
-    {
+    public function verifyOTP(Request $request) {
         
 
         // Validate the request data
@@ -458,8 +457,12 @@ class LetterController extends Controller
             $letter = $this->letterRepository->getLetterByID($id);
     
             // Decode the JSON data
-            $letter->data = json_decode($letter->data);
-            $letter->member = json_decode($letter->member);
+            if (property_exists($letter, 'data')) {
+                $letter->data = json_decode($letter->data);
+            }
+            if (property_exists($letter, 'member')) {
+                $letter->member = json_decode($letter->member);
+            }
     
             return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
         } catch (Exception $e) {
@@ -517,8 +520,16 @@ class LetterController extends Controller
     public function getAllLetter(Request $request){
 
         try {
-            $listLetter = $this->letterRepository->getAllLetter();
-            return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+            $listLetter = $this->letterRepository->getAll();
+            foreach ($listLetter as $letter) {
+                if(isset($letter->data)) {
+                    $letter->data = json_decode($letter->data);
+                }
+                if (isset($letter->member)) {
+                    $letter->member = json_decode($letter->member);
+                }
+            }
+            return response()->json(['message' => 'Letter fetched successfully', 'data' => $listLetter ], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
@@ -563,8 +574,7 @@ class LetterController extends Controller
 
     
 
-    public function generateDocument(Request $request)
-    {
+    public function generateDocument(Request $request) {
         try {
             $validator = Validator::make($request->all(), LetterValidation::GetLetterAttachment());
             if ($validator->fails()) {

@@ -44,7 +44,7 @@ use App\Http\Controllers\LetterTemplateController;
         // Route::post('letter/create', [LetterController::class, 'createLetter']);
         Route::post('letter/new', [LetterController::class,'CreateLetter']);
         Route::patch('letter/update', [LetterController::class, 'updateLetter']);
-        Route::post('letter', [LetterController::class, 'getAllLetter']);
+        Route::get('letter', [LetterController::class, 'getAllLetter']);
         Route::post('letter/detail', [LetterController::class, 'getLetterById']);
 
         Route::post('/otp/verify-otp', [LetterController::class, 'verifyOTP']);
