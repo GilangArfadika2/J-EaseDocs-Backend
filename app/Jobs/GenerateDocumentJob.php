@@ -115,21 +115,47 @@ class GenerateDocumentJob implements ShouldQueue
         if ($letter->approved_at != null){
             $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
              $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
+             $templateProcessor->setValue("keputusan", $letter->status);
         } else {
             $templateProcessor->setValue("tanggal_penyetujuan", "");
+            $templateProcessor->setValue("tanggal_penyetujuan", "on-progress");
         }
         $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
+        $templateProcessor->setValue("email_pemohon",$letter->email_pemohon);
         $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
         $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
         $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
         $id_approval = $letterTemplate->id_approval;
-        $id_approval = (int) str_replace(array('{', '}'), '', $id_approval);
-        $approval = $this->authRepository->getUserById($id_approval);
-        $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
-        $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+        $id_approval_array = explode(',', str_replace(array('{', '}'), '', $id_approval));
+        if (count($id_approval_array) > 1) {
+            
+            $approvals = [];
+            
+            foreach ($id_approval_array as $id) {
+                $approval = $this->authRepository->getUserById((int)$id);
+                
+                // $approvals[] = $approval;
+                $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+                $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+                break;
+            }
+         
+        } else {
+          
+            $id_approvalInt = (int)str_replace(array('{', '}'), '', $id_approval);
+            $approval = $this->authRepository->getUserById($id_approvalInt);
+
+            $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+            $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+
+        }
+        // $id_approval = (int) str_replace(array('{', '}'), '', $id_approval);
+        // $approval = $this->authRepository->getUserById($id_approval);
+        // $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+        // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
         if ($letter->nomor_surat != null){
-            $link = 'http://localhost:8000/api/letter/barcode/' . $letter->nomor_surat;
+            $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
 
                             // Generate a QR code
             $qrCode = new QrCode($link);

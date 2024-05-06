@@ -54,6 +54,7 @@ class LetterValidation{
             'letter_id' => 'required|numeric|exists:surat,id',
             'role' => 'required|string|in:atasan_pemohon,checker,approval',
             'email' => 'required|email',
+            'message' => 'nullable|string',
         ];
     }
 

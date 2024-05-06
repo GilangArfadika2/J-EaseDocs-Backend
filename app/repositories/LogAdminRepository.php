@@ -4,11 +4,10 @@ namespace App\Repositories;
 
 use App\Models\LogAdmin;
 
-class LogRepository
-{
+class LogAdminRepository {
     protected $model;
 
-    public function __construct(Log $model)
+    public function __construct(LogAdmin $model)
     {
         $this->model = $model;
     }

@@ -9,15 +9,20 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 use App\Validations\AuthValidation; 
-
+use Illuminate\Support\Facades\Cache;
+use App\Models\LogAdmin;
+use App\Repositories\LogAdminRepository;
 
 class AuthController extends Controller
 {
     protected $authRepository;
+    protected $logAdminRepository;
 
-    public function __construct(AuthRepository $authRepository)
+
+    public function __construct(AuthRepository $authRepository, LogAdminRepository $logAdminRepository)
     {
         $this->authRepository = $authRepository;
+        $this->logAdminRepository = $logAdminRepository;
         $this->middleware('check.role.and.cookie')->only(['getAllUser', 'getUserById', 'deleteUser', 'updateUser','updateUserGetter','registerGetter']);
     }
 
@@ -30,9 +35,17 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            // Validate JSON data against the schema
-            
-            $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
+            if (!$request->hasCookie('jwt_token')) {
+                return response()->json(['message' => 'Missing token cookie'], 401);
+            }
+            $token = $request->cookie('jwt_token');
+            $user = Auth::guard('web')->setToken($token)->user();
+        
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+        
     
             $validator = Validator::make($request->all(), AuthValidation::getRegisterRules());
             if ($validator->fails()) {
@@ -40,6 +53,11 @@ class AuthController extends Controller
             }
             // If validation passes, proceed with user registration
             $this->authRepository->createUser($request->all());
+            $logAdmin = new LogAdmin();
+            $logAdmin->user_id = $user->id;
+            $logAdmin->action = "User " . $user->name .   " with role " . $user->role .   " has registered new User " . $request->input("name") . " with role " . $request->input("role") ;
+            $this->logAdminRepository->create($logAdmin->getAttributes());
+
             return response()->json(['message' => 'User registered successfully'], 200);
         } catch (Exception $e) {
             return response()->json(['message' => 'Registration failed', 'errors' => $e->getMessage()], 500);
@@ -69,7 +87,7 @@ class AuthController extends Controller
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
                 null,        // Domain (null for any domain)
-                 false,        // Secure (set to true if using HTTPS)
+                 true,        // Secure (set to true if using HTTPS)
                 true,        // HTTP-only flag
                 false,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
                 'None'       // SameSite attribute set to 'None'
@@ -100,11 +118,11 @@ class AuthController extends Controller
                     '', // Empty token value
                     time() - 3600, // Expired time in the past
                     '/',
-                    null,
-                    false,
-                    true,
-                    true,
-                    'None'
+                    null,        // Domain (null for any domain)
+                    true,        // Secure (set to true if using HTTPS)
+                   true,        // HTTP-only flag
+                   false,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
+                   'None'       // SameSite attribute set to 'None'
                 );
             } else {
                 // No token cookie found, user is already logged out
@@ -118,22 +136,33 @@ class AuthController extends Controller
 
     public function isLogin(Request $request) {
         try {
-
-            if (!$request->hasCookie('jwt_token')) {
-                return response()->json(['message' => 'Missing token cookie','log_in' => 'false'], 400);
+            // Check if the result is cached
+            $cachedResult = Cache::get('isLoginResult_' . $request->cookie('jwt_token'));
+            if ($cachedResult) {
+                return $cachedResult;
             }
-
-            $token = $request->cookie('jwt_token');
-
-            $user = Auth::guard('web')->setToken($token)->user();
-
-             return response()->json([ 'message' => 'User is already logged in','log_in' => 'true','role' => $user->role , 'email' => $user->email],200);
+    
+            if (!$request->hasCookie('jwt_token')) {
+                $response = response()->json(['message' => 'Missing token cookie', 'log_in' => 'false'], 400);
+            } else {
+                $token = $request->cookie('jwt_token');
+                $user = Auth::guard('web')->setToken($token)->user();
+    
+                $response = response()->json([
+                    'message' => 'User is already logged in',
+                    'log_in' => 'true',
+                    'role' => $user->role,
+                    'email' => $user->email
+                ], 200);
+            }
+    
+            // Cache the result for future use
+            Cache::put('isLoginResult_' . $request->cookie('jwt_token'), $response, now()->addMinutes(10)); // Adjust expiry time as needed
+    
+            return $response;
+        } catch (Exception $e) {
+            return response()->json(['message' => 'User is not logged in', 'log_in' => 'false'], 500);
         }
-        catch (Exception $e) {
-            return response()->json([ 'message' => 'User is not login in','log_in' => 'false'],500);
-        }
-
-        
     }
 
     /**
@@ -212,12 +241,12 @@ class AuthController extends Controller
             $token = $request->cookie('jwt_token');
 
             $user = Auth::guard('web')->setToken($token)->user();
-        
+
             $listUsers = $this->authRepository->getAllUser();
             // $_SESSION['allUser'] = $listUsers;
             // return view('listAllUser');
 
-        return response()->json([ 'message' => 'User Fetched succesfully','role'=> $user->role, 'data' => $listUsers]);
+        return response()->json([ 'message' => 'User Fetched succesfully','user'=> $user, 'data' => $listUsers]);
         }
         catch (Exception $e) {
             error_log($e.getMessage());
@@ -272,6 +301,11 @@ class AuthController extends Controller
             // Retrieve email and OTP from the request
 
         $this->authRepository->deleteUser($id);
+
+        $logAdmin = new LogAdmin();
+        $logAdmin->user_id = $user->id;
+        $logAdmin->action = "User " . $user->name .   " with role " . $user->role .   " has updated User " . $request->input("name") . " with role " . $request->input("role") ;
+        $this->logAdminRepository->create($logAdmin->getAttributes());
 
         return response()->json(['message' => 'User Deleted succesfully']);
 
@@ -359,6 +393,10 @@ class AuthController extends Controller
         $id = $request->input('id');
 
         $this->authRepository->updateUser($id, $request->all());
+        $logAdmin = new LogAdmin();
+        $logAdmin->user_id = $user->id;
+        $logAdmin->action = "User " . $user->name .   " with role " . $user->role .   " has updated User " . $request->input("name") . " with role " . $request->input("role") ;
+        $this->logAdminRepository->create($logAdmin->getAttributes());
 
         return response()->json(['message' => 'User Updated succesfully']);
     }   

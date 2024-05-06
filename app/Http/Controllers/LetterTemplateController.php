@@ -7,22 +7,36 @@ use App\Repositories\LetterTemplateRepository;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\LetterController;
+use Illuminate\Support\Facades\Cache;
 class LetterTemplateController extends Controller
 {
     protected $letterTemplateRepository;
+    protected $letterController;
 
-    public function __construct(LetterTemplateRepository $letterTemplateRepository)
+    public function __construct(LetterTemplateRepository $letterTemplateRepository, LetterController $letterController)
     {
         $this->letterTemplateRepository = $letterTemplateRepository;
+        $this->letterController  = $letterController;
     }
 
     public function index()
     {
-        $templates = $this->letterTemplateRepository->getAll();
-        foreach ($templates as $template) {
-            $template->isian = json_decode($template->isian);
-        }
-        return response()->json(['message' => 'letter fetched succesfully' , 'data' => $templates],200);
+       
+        // $cacheKey = 'all_letterTemplate';
+
+        
+        // if (Cache::has($cacheKey)) {
+            
+            // $templates = Cache::get($cacheKey);
+        // } else {
+            $templates = $this->letterTemplateRepository->getAll();
+
+            // Cache::put($cacheKey, $templates, now()->addMinute(1));
+        // }
+
+        
+        return response()->json(['message' => 'Letter templates fetched successfully', 'data' => $templates], 200);
     }
 
     public function getLetterTemplateById($id)
@@ -101,13 +115,6 @@ class LetterTemplateController extends Controller
     public function UpdateLetterTemplate(Request $request)
     {
         if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-
-            $fileName =  $file->getClientOriginalName();
-
-        
-            $file->storeAs('uploads', $fileName);
-
             $validationRules = [
                 'id' => 'required|numeric|exists:template_surat,id',
                 'id_admin' => 'required|numeric|exists:user,id',
@@ -118,9 +125,29 @@ class LetterTemplateController extends Controller
                 'isian' => 'required',
             ];
             $validator = Validator::make($request->all(),$validationRules);
+            
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
+            
+            $letterTemplate = $this->letterTemplateRepository->getById($request->input('id'));
+            $existingFileName = $letterTemplate->attachment;
+
+            $file = $request->file('attachment');
+
+            $fileName =  $file->getClientOriginalName();
+            $directory = 'public/template';
+
+          
+            Storage::makeDirectory($directory);
+            Storage::putFileAs($directory, $file, $fileName);
+
+            if ($existingFileName) {
+                Storage::delete($directory . '/' . $existingFileName);
+            }
+            
+
+          
             $template = $this->letterTemplateRepository->update($request->all());
             return response()->json(['message' => 'letter template updated succesfully' , 'data' => $template],200);
     } else {

@@ -78,4 +78,22 @@ class NotifikasiRepository
     {
         DB::table('inbox')->where('id', $id)->delete();
     }
+
+    public function markAsRead($notificationId)
+    {
+        DB::table('inbox')
+            ->where('id', $notificationId)
+            ->update(['is_read' => true]);
+    }
+
+   
+    public function countUnread($userId)
+    {
+        return DB::table('inbox')
+            ->where('user_id', $userId)
+            ->where('is_read', false)
+            ->count();
+    }
+
+
 }

@@ -12,7 +12,7 @@ class AuthValidation{
             'email' => 'required|string|email|unique:user|max:255',
             'password' => 'required|string|min:8|max:255',
             'role' => 'required|in:checker,approval,admin,superadmin',
-            'nip' => 'required|int|max:16',
+            'nip' => 'required|string|max:255',
             'jabatan' => 'required|in:kadivOTI,kabagLay,kabagbis'
         ];
     }

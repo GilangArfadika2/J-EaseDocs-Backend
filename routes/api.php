@@ -26,6 +26,7 @@ use App\Http\Controllers\LetterTemplateController;
 
 // Route::prefix('api')->group(function () {
 
+    // log admin 1
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/addNewUser', [AuthController::class, 'registerGetter']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -35,10 +36,12 @@ use App\Http\Controllers\LetterTemplateController;
     
     Route::get('user', [AuthController::class, 'getAllUser']);
     Route::get('user-detail/{id}', [AuthController::class, 'getUserById'])->where('id', '[0-9]+');
+    // log admin 2
     Route::delete('user-delete/{id}', [AuthController::class, 'deleteUser'])->where('id', '[0-9]+');
     Route::get('editPassword',[AuthController::class, 'editPassword']);
     Route::patch('/user/password', [AuthController::class, 'updatePassword']);
     Route::get('editUser/{id}', [AuthController::class, 'updateUserGetter'])->where('id', '[0-9]+');
+    // log admin 3
     Route::patch('updateUser', [AuthController::class, 'updateUser']);
 
         // Route::post('letter/create', [LetterController::class, 'createLetter']);
@@ -46,6 +49,8 @@ use App\Http\Controllers\LetterTemplateController;
         Route::patch('letter/update', [LetterController::class, 'updateLetter']);
         Route::post('letter', [LetterController::class, 'getAllLetter']);
         Route::post('letter/detail', [LetterController::class, 'getLetterById']);
+        Route::get('letter-template/isian/{id}', [LetterController::class, 'getLetterTemplateFieldByID']);
+        // getLetterDataFileByID
 
         Route::post('/letter/verify-otp', [LetterController::class, 'verifyOTP']);
         Route::patch('/letter/update-decision', [LetterController::class, 'updateDecision']);
@@ -61,6 +66,8 @@ use App\Http\Controllers\LetterTemplateController;
         // Route::post('/template-surat/attachment', [LetterTemplateController::class, 'fetchFile']);
         Route::post('/template-surat/attachment', [LetterController::class, 'generateDocument']);
         Route::get('/letter/barcode/{nomorSurat}', [LetterController::class, 'getLetterBarcodeDetail']);
+
+        Route::get('/inbox/countUnread', [LetterController::class,"getUnreadNotificationCount"]);
 
         Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
         Route::get('/log/{letterId}', [LogController::class, 'getLogSurat']);

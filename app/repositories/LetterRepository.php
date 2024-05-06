@@ -22,13 +22,28 @@ class LetterRepository
     }
 
     public function getAllArsip() {
+
         $listLetter = DB::table('surat')
-            ->whereNotNull('nomor_surat')
-            ->get();
+        ->join('template_surat', 'surat.id_template_surat', '=', 'template_surat.id')
+        ->whereNotNull('nomor_surat')
+        ->select('surat.*', 'template_surat.perihal', 'template_surat.priority', 'template_surat.attachment')
+        ->orderByDesc('template_surat.priority')
+        ->get();
+
         foreach ($listLetter as &$letter) {
             $letter->data = json_decode($letter->data, true);
-            // $letter->member = json_decode($letter->member, true);
+          
+            $attachment = $letter->attachment;
+           
+            $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
+            $pdfContent = file_get_contents($pdfPath);
+           // Encode PDF content to base64
+            $base64EncodedPdf = base64_encode($pdfContent);
+            
+            // Assign encoded PDF content to a property or key in the $listLetter array
+            $letter->pdfContent = $base64EncodedPdf;
         }
+
 
         return $listLetter;
     }
@@ -43,15 +58,23 @@ class LetterRepository
         return $letter;
     }
 
-    public function getLetterByBulkId(array $idArray)
+    public function getLetterByBulkId(array $idArray,$user_id)
     {
-        $listLetter =  DB::table('surat')
-        ->whereIn('id',  $idArray)
+        $listLetter = DB::table('surat')
+        ->join('template_surat', 'surat.id_template_surat', '=', 'template_surat.id')
+        ->join('inbox', 'surat.id', '=', 'inbox.letter_id')
+        ->whereIn('surat.id', $idArray)
+        ->where('inbox.user_id', $user_id)
+        ->select('surat.*', 'template_surat.perihal', 'template_surat.priority','inbox.decision')
+        ->orderByDesc('template_surat.priority')
+        ->orderBy('surat.created_at', 'desc')
         ->get();
+
         foreach ($listLetter as &$letter) {
             $letter->data = json_decode($letter->data, true);
             // $letter->member = json_decode($letter->member, true);
         }
+
 
         return $listLetter;
     }
@@ -75,7 +98,7 @@ class LetterRepository
         $createdLetter = Letter::create([
             'id_template_surat' =>  $data['id_template_surat'],
             'data' => json_encode( $data['data']),
-            'status' => "ongoing",
+            'status' => "on-progress",
             // 'nomor_surat' =>  $data['nomor_surat'],
             'nama_pemohon' =>  $data['nama_pemohon'],
             'email_pemohon' =>  $data['email_pemohon'],

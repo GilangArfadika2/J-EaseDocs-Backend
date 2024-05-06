@@ -22,6 +22,7 @@ class LogAdmin extends Model
        'id',
         'user_id',
         'action',
+        'created_at',
         
 
     ];

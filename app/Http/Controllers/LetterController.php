@@ -11,6 +11,7 @@ use Spatie\PdfToText\Pdf;
 use App\Repositories\OtpRepository;
 use App\Repositories\LogRepository;
 use App\Repositories\AuthRepository;
+use App\DTO\Letter\TemplateFieldDTO;
 use App\Repositories\NotifikasiRepository;
 // use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
@@ -51,7 +52,7 @@ class LetterController extends Controller
         $this->letterTemplateRepository = $letterTemplateRepository;
         $this->logRepository = $logRepository;
     }
-// adawdwadwadwadwdaawdwaadawadw
+
     public function getAllArsip(){
 
         try {
@@ -220,15 +221,20 @@ class LetterController extends Controller
     }
 
     public function updateDecision(Request $request) {
-        $validator = Validator::make($request->all(), LetterValidation::updateDecisionRules());
-        if ($validator->fails()) {
-            return response()->json(['message' => $validator->errors()], 400);
-        }
+
+        try {
+
+        
+            $validator = Validator::make($request->all(), LetterValidation::updateDecisionRules());
+            if ($validator->fails()) {
+                return response()->json(['message' => $validator->errors()], 400);
+            }
     
         $decision = $request->input('decision');
         $role = $request->input('role');
         $letterId = $request->input('letter_id');
         $email = $request->input('email');
+        $feedback = $request->input('message');
         // error_log($email);
         
         // error_log($userId);
@@ -286,12 +292,14 @@ class LetterController extends Controller
 
             } else {
                  $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listCheckerId, $letterId);
+                 $this->letterRepository->updateLetterStatus($letterId, $decision);
+                    GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
 
             }
             
             // $listUser = $this->authRepository->getUserByListId( $listCheckerId);  
             $userString =  $letter->nama_atasan_pemohon . " NIP : " . $letter->nip_atasan_pemohon;
-            Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $userString ));
+            Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $userString ,$feedback));
             
         } else {
             $notifikasi =  $this->notifikasiRepository->getNotifikasiByUserAndLetterId($userId, $letterId);
@@ -337,8 +345,8 @@ class LetterController extends Controller
                 
                 if (!$isRejected){
                      $listUserString = implode(', ', $listUser);
-                        Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString )); 
-                          Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString )); 
+                        Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
+                          Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
                     if ($role === "checker"){
                         
                         foreach ( $listApprovalId as $id_approval){
@@ -368,19 +376,25 @@ class LetterController extends Controller
                         $log->status ="approved";
                         $log->user_id = $letterTemplate->id_approval;
                         $this->logRepository->create($log->getAttributes());
+                        $this->letterRepository->updateLetterStatus($letterId, $decision);
+                           GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
                     }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
                     // $userString =  $letter->nama_atasan_pemohon . " NIP : " . $letter->nip_atasan_pemohon;
-                    // Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role,  $userString ));
+                    // Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role,  $userString ,$feedback));
                 } else {
 
                     $listUserString = implode(', ', $listUser);
-                    Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString )); 
-                        Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString )); 
-
-                     $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
+                    Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
+                        Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
+                    
+                    if ($role === "checker"){
+                        $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
+                    }
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
+                     $this->letterRepository->updateLetterStatus($letterId, $decision);
+                     GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
                     
                      $log = new Log();
                      $log->letter_id = $letterId;
@@ -405,12 +419,22 @@ class LetterController extends Controller
                 }
                 // $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
                 $this->letterRepository->updateLetterNomorSurat($letterId,null);
+                $this->letterRepository->updateLetterStatus($letterId, $decision);
+                GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
             }
+
+         
 
             
 
         }
+
+    
         return response()->json(['message' => 'update letter success'], 200);
+    }
+        catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
        
 
     
@@ -471,20 +495,122 @@ class LetterController extends Controller
         }
     }
 
-    public function getLetterFileByID(Request $request){
+    // public function getLetterFileByID(Request $request){
 
+    //     try {
+    //         $id = $request->input('id');
+    //         $letter = $this->letterRepository->getLetterByID($id);
+    
+    //         // Decode the JSON data
+    //         $letter->data = json_decode($letter->data);
+    //         $letter->member = json_decode($letter->member);
+    
+    //         return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+    //     } catch (Exception $e) {
+    //         return response()->json(['message' =>  $e->getMessage()], 500);
+    //     }
+    // }
+
+    public function getLetterTemplateField($id){
         try {
-            $id = $request->input('id');
-            $letter = $this->letterRepository->getLetterByID($id);
+            // $id = $request->input('id');
+            $letter = $this->letterTemplateRepository->getById($id);
     
             // Decode the JSON data
-            $letter->data = json_decode($letter->data);
-            $letter->member = json_decode($letter->member);
+            // $letter->isian= json_decode($letter->isian);
+            // $letter->member = json_decode($letter->member);
+
+            $isian = json_decode($letter->isian);
+
+            $listTemplateField = [];
+            foreach ($isian as $isianName => $validation) {
+                $control_id =  str_replace('_', '-', $isianName);
+                $label =  mb_convert_case(str_replace('_', ' ', $isianName), MB_CASE_TITLE);
+                $type = "text";
+                $optionArray = [];
+                if (!is_array($validation)){
+                    if (strpos($validation, 'in:') !== false) {
+                        $type = "option";
+                        $optionString = explode(":", explode("|", $validation)[2])[1];
+                        $optionArray = explode(",",  $optionString);
+                    }
+                    if (strpos($validation, 'date') !== false) {
+                        $type = "date";
+                    }
+                    $listTemplateField[] = new TemplateFieldDTO( $control_id , $type,$label,  $isianName, $optionArray, [],[] );
+                } else {
+                    $type = "array";
+                    $templateFieldArrayHead = ["No"];
+                    $templateFieldArrayData = [];
+                    $isianArray = $validation[0];
+                    // error_log( $isianArray );
+                    foreach ($isianArray as $isianArrayItemName => $isianArrayItemValidation) {
+                        $controlIdItem =  str_replace('_', '-', $isianArrayItemName);
+                        $labelItem =  mb_convert_case(str_replace('_', ' ', $isianArrayItemName), MB_CASE_TITLE);
+                        $typeItem = "text";
+                        $optionArrayItem = [];
+                        if (strpos($isianArrayItemValidation, 'in:') !== false) {
+                            $typeItem = "option";
+                            $optionString = explode(":", explode("|", $isianArrayItemValidation)[2])[1];
+                            $optionArrayItem = explode(",",  $optionString);
+                        }
+                        if (strpos($isianArrayItemValidation, 'date') !== false) {
+                            $typeItem = "date";
+                        }
+                        $templateFieldArrayHead[] = $isianArrayItemName;
+                        $templateFieldArrayData[] = new TemplateFieldDTO( $controlIdItem , $typeItem,$labelItem,  $isianArrayItemName, $optionArrayItem, [],[] );
+                        
+                    }
+                    $listTemplateField[] = new TemplateFieldDTO( $control_id , $type,$label,  $isianName, $optionArray,$templateFieldArrayHead , $templateFieldArrayData  );
+                }
+               
+            }
+
+
+            return [null,$listTemplateField];
     
-            return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+            // return response()->json(['message' => 'Letter fetched successfully', 'data' =>  $listTemplateField], 200);
+        } catch (Exception $e) {
+            // return response()->json(['message' =>  $e->getMessage()], 500);
+            return [$e,null];
+    
+        }
+    }
+
+    public function getLetterTemplateFieldByID($id){
+
+        try {
+            $data = $this->getLetterTemplateField($id);
+            if ($data[0] === null) {
+                return response()->json(['message' => 'Letter fetched successfully', 'data' =>  $data[1]], 200);
+            } else {
+                return response()->json(['message' => 'Letter fetched successfully', 'data' =>  $data[0]->getMessage()], 500);
+            }
+
+            
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
         }
+    }
+
+    public function getUnreadNotificationCount(Request $request){
+
+        try {
+            if (!$request->hasCookie('jwt_token')) {
+                return response()->json(['message' => 'Missing token cookie'], 400);
+            }
+
+            $token = $request->cookie('jwt_token');
+
+            $user = Auth::guard('web')->setToken($token)->user();
+
+            $countUnread = $this->notifikasiRepository->countUnread($user->id);
+            return response()->json(['message' =>  "unread notification count fetched succesfully", "data" => $countUnread], 200);
+         }
+        catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+
     }
 
     public function getLetterByBulkUserId(Request $request){
@@ -504,9 +630,11 @@ class LetterController extends Controller
             foreach ($listNotifikasi as $notifikasi) {
                 // error_log($notifikasi);
                 $listLetterId[] = $notifikasi->letter_id;
+                $this->notifikasiRepository->markAsRead($notifikasi->id);
+
             }
 
-            $listLetter = $this->letterRepository->getLetterByBulkId($listLetterId);
+            $listLetter = $this->letterRepository->getLetterByBulkId($listLetterId, $user->id);
             // // Decode the JSON data
             // $letter->data = json_decode($letter->data);
             // $letter->member = json_decode($letter->member);
@@ -522,6 +650,7 @@ class LetterController extends Controller
 
         try {
             $listLetter = $this->letterRepository->getAllLetter();
+           
             return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
@@ -563,6 +692,7 @@ class LetterController extends Controller
     
         return $encoded;
     }
+    
 
 
     

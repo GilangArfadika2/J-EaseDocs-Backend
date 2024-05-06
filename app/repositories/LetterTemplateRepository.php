@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+
 
 class LetterTemplateRepository
 {
@@ -15,8 +17,9 @@ class LetterTemplateRepository
 
     public function getAll()
     {
-        return DB::table($this->table)->get();
+            return DB::table($this->table)->select('id', 'perihal')->get();
     }
+
     
 
     public function create(array $attributes,$attachment)
