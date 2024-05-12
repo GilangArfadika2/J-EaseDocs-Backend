@@ -23,8 +23,8 @@ class LetterTemplateController extends Controller
     public function index()
     {
        
-        // $cacheKey = 'all_letterTemplate';
-
+        try {
+            
         
         // if (Cache::has($cacheKey)) {
             
@@ -37,6 +37,11 @@ class LetterTemplateController extends Controller
 
         
         return response()->json(['message' => 'Letter templates fetched successfully', 'data' => $templates], 200);
+        } catch (Exception $e){
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+        // $cacheKey = 'all_letterTemplate';
+
     }
 
     public function getLetterTemplateById($id)
