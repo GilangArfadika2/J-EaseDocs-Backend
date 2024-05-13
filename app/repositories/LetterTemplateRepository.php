@@ -33,6 +33,7 @@ class LetterTemplateRepository
              "perihal" => $attributes["perihal"],
             "priority" => $attributes["priority"],
             "isian" => $attributes["isian"] ,
+            
             "attachment" => $attachment];
         return DB::table($this->table)->insertGetId($insertedData);
     }

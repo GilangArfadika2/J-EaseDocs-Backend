@@ -67,8 +67,9 @@ use App\Http\Controllers\LetterTemplateController;
         Route::post('/template-surat/attachment', [LetterController::class, 'generateDocument']);
         Route::get('/letter/barcode/{nomorSurat}', [LetterController::class, 'getLetterBarcodeDetail']);
 
+        //logAdmin
         Route::get('/inbox/countUnread', [LetterController::class,"getUnreadNotificationCount"]);
-
+        Route::get('/logAudit', [LogController::class,'getAllAdmin']);
         Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
         Route::get('/log/{letterId}', [LogController::class, 'getLogSurat']);
         
