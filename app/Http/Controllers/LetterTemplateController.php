@@ -9,6 +9,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LetterController;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
+use App\Validations\AuthValidation; 
+use Illuminate\Support\Facades\Cache;
 class LetterTemplateController extends Controller
 {
     protected $letterTemplateRepository;

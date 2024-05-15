@@ -284,6 +284,8 @@ class LetterController extends Controller
                     $notifikasi->user_id = $id_checker;
                     $notifikasi->letter_id = $letterId;
                     $notifikasi->decision = "on-progress";
+
+                    $this->letterRepository->updateLetterStatus($letterId, "on-progress");
     
                     // $notifikasiArray = (array) $notifikasi;
                     $notifikasiArray = $notifikasi->getAttributes();
@@ -293,7 +295,8 @@ class LetterController extends Controller
             } else {
                  $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listCheckerId, $letterId);
                  $this->letterRepository->updateLetterStatus($letterId, $decision);
-                    GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
+                 $job = new GenerateDocumentJob($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository);
+                 $job->handle();
 
             }
             
@@ -325,10 +328,7 @@ class LetterController extends Controller
             $listUser = [];
 
             foreach ( $listNotifikasi as $notifikasi){
-                if ($notifikasi->decision == "on-progress"){
-                    $isFinalized = false;
-                    break;
-                } else if ($notifikasi->decision == "rejected"){
+                if ($notifikasi->decision == "rejected"){
                     $isRejected = true;
                     $listUserRejected[] =$this->authRepository->getUserById($notifikasi->user_id)->name;
                 } else {
@@ -341,7 +341,6 @@ class LetterController extends Controller
                 $listUser =  $listUserRejected;
             }
             if ($isFinalized){
-                
                 
                 if (!$isRejected){
                      $listUserString = implode(', ', $listUser);
@@ -358,6 +357,8 @@ class LetterController extends Controller
                             $notifikasiArray = $notifikasi->getAttributes();
                             $this->notifikasiRepository->create( $notifikasiArray);
                         }   
+
+                        
                         $logChecker = new Log();
                         $logChecker->letter_id = $letterId;
                         $logChecker->status ="approved";
@@ -377,7 +378,7 @@ class LetterController extends Controller
                         $log->user_id = $letterTemplate->id_approval;
                         $this->logRepository->create($log->getAttributes());
                         $this->letterRepository->updateLetterStatus($letterId, $decision);
-                           GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
+                        $this->generateDocument($letter);
                     }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
@@ -387,14 +388,12 @@ class LetterController extends Controller
 
                     $listUserString = implode(', ', $listUser);
                     Mail::to($letter->email_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
-                        Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
+                    Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
                     
-                    if ($role === "checker"){
-                        $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
-                    }
+                   
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
                      $this->letterRepository->updateLetterStatus($letterId, $decision);
-                     GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
+                     $this->generateDocument($letter);
                     
                      $log = new Log();
                      $log->letter_id = $letterId;
@@ -406,18 +405,19 @@ class LetterController extends Controller
                      }
                      $this->logRepository->create($log->getAttributes());
                 }
+                $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listUserId, $letterId);
             } else {
                
                 $log = new Log();
                 $log->letter_id = $letterId;
                 $log->status = "rejected";
                 if ($role == "checker"){
-                    $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
+
                     $log->user_id = $letterTemplate->id_checker;
                 } else {
                     $log->user_id = $letterTemplate->id_approval;
                 }
-                // $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listApprovalId, $letterId);
+    
                 $this->letterRepository->updateLetterNomorSurat($letterId,null);
                 $this->letterRepository->updateLetterStatus($letterId, $decision);
                 GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
@@ -693,132 +693,130 @@ class LetterController extends Controller
         return $encoded;
     }
     
+    private function generateDocumentLetter($letter)
+    {
+        $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
+        $attachment = $letterTemplate->attachment;
+        // Load the DOCX template
+        // $templatePath = storage_path("app\\public\\template\\" . $attachment);
+        $templatePath = public_path("template/" . $attachment);
 
+        
+        // Create a TemplateProcessor instance
+        $templateProcessor = new TemplateProcessor($templatePath);
 
-    
+        
+        // Define data to render
+        $data =  json_decode( $letter->data ,true);
 
-    // public function generateDocument(Request $request)
-    // {
-    //     try {
-    //         $validator = Validator::make($request->all(), LetterValidation::GetLetterAttachment());
-    //         if ($validator->fails()) {
-    //             return response()->json(['message' => $validator->errors()], 400);
-    //         }
-
-    //         $letter = $this->letterRepository->getLetterById($request->input("letter_id"));
-    //         $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
-    //         $attachment = $letterTemplate->attachment;
-    //         // Load the DOCX template
-    //         // $templatePath = storage_path("app\\public\\template\\" . $attachment);
-    //         $templatePath = public_path("template/" . $attachment);
-
+        // Fill the template with data
+        foreach ($data as $key => $value) {
+            // error_log($value);
             
-    //         // Create a TemplateProcessor instance
-    //         $templateProcessor = new TemplateProcessor($templatePath);
-
+            // $templateProcessor->setValue($key, $value);
+            if (is_array($value)) {
+                // If $value is an array, assume it represents data for cloning rows in a table
+                $rowCount = count($value);
+                // Clone the row in the table identified by $key for each item in the array
+                $templateProcessor->cloneRow($key, $rowCount);
+                // Loop through each item in the array and set the values in the cloned rows
+                foreach ($value as $index => $item) {
+                    foreach ($item as $itemKey => $itemValue) {
+                        error_log($itemKey . ": ". $itemValue);
+                        if ($itemKey !== $key){
+                             // Set the value in the |template for each item attribute
+                            $templateProcessor->setValue($itemKey . '#' . ($index + 1), $itemValue);
+                        }
+                        // Assuming attributes are named as attribute_1, attribute_2, ...
+                    }
+                    $templateProcessor->setValue($key . '#' . ($index + 1),$index + 1 );
+                }
+            } else {
+                error_log($value);
+                $templateProcessor->setValue($key, $value);
+            }
+        }
+        $tanggal_permohonan = Carbon::parse($letter->created_at)->translatedFormat('d F Y');
+        $templateProcessor->setValue("tanggal_permohonan", $tanggal_permohonan);
+        $templateProcessor->setValue("tanggal_permohonan", $letter->created_at);
+        $templateProcessor->setValue("keputusan", $letter->status);
+        if ($letter->approved_at != null){
+            $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
+             $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
+             $templateProcessor->setValue("keputusan", $letter->status);
+        } else {
+            $templateProcessor->setValue("tanggal_penyetujuan", "");
+            $templateProcessor->setValue("tanggal_penyetujuan", "on-progress");
+        }
+        $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
+        $templateProcessor->setValue("email_pemohon",$letter->email_pemohon);
+        $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
+        $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
+        $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
+        $id_approval = $letterTemplate->id_approval;
+        $id_approval_array = explode(',', str_replace(array('{', '}'), '', $id_approval));
+        if (count($id_approval_array) > 1) {
             
-    //         // Define data to render
-    //         $data =  json_decode( $letter->data ,true);
-
-    //         // Fill the template with data
-    //         foreach ($data as $key => $value) {
-    //             // error_log($value);
+            $approvals = [];
+            
+            foreach ($id_approval_array as $id) {
+                $approval = $this->authRepository->getUserById((int)$id);
                 
-    //             // $templateProcessor->setValue($key, $value);
-    //             if (is_array($value)) {
-    //                 // If $value is an array, assume it represents data for cloning rows in a table
-    //                 $rowCount = count($value);
-    //                 // Clone the row in the table identified by $key for each item in the array
-    //                 $templateProcessor->cloneRow($key, $rowCount);
-    //                 // Loop through each item in the array and set the values in the cloned rows
-    //                 foreach ($value as $index => $item) {
-    //                     foreach ($item as $itemKey => $itemValue) {
-    //                         error_log($itemKey . ": ". $itemValue);
-    //                         if ($itemKey !== $key){
-    //                              // Set the value in the |template for each item attribute
-    //                             $templateProcessor->setValue($itemKey . '#' . ($index + 1), $itemValue);
-    //                         }
-    //                         // Assuming attributes are named as attribute_1, attribute_2, ...
-    //                     }
-    //                     $templateProcessor->setValue($key . '#' . ($index + 1),$index + 1 );
-    //                 }
-    //             } else {
-    //                 error_log($value);
-    //                 $templateProcessor->setValue($key, $value);
-    //             }
-    //         }
-    //         $tanggal_permohonan = Carbon::parse($letter->created_at)->translatedFormat('d F Y');
-    //         $templateProcessor->setValue("tanggal_permohonan", $tanggal_permohonan);
-    //         $templateProcessor->setValue("tanggal_permohonan", $letter->created_at);
-    //         $templateProcessor->setValue("keputusan", $letter->status);
-    //         if ($letter->approved_at != null){
-    //             $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
-    //              $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
-    //         } else {
-    //             $templateProcessor->setValue("tanggal_penyetujuan", "");
-    //         }
-    //         $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
-    //         $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
-    //         $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
-    //         $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
-    //         $id_approval = $letterTemplate->id_approval;
-    //         $id_approval = (int) str_replace(array('{', '}'), '', $id_approval);
-    //         $approval = $this->authRepository->getUserById($id_approval);
-    //         $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
-    //         $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+                // $approvals[] = $approval;
+                $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+                $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
+                break;
+            }
+         
+        } else {
+          
+            $id_approvalInt = (int)str_replace(array('{', '}'), '', $id_approval);
+            $approval = $this->authRepository->getUserById($id_approvalInt);
 
-    //         if ($letter->nomor_surat != null){
-    //             $link = 'http://localhost:8000/api/letter/barcode/' . $letter->nomor_surat;
+            $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+            $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
-    //                             // Generate a QR code
-    //             $qrCode = new QrCode($link);
-    //             $qrCodeFilePath = public_path("qrcode" . "_". $letter->id . ".png");
+        }
+        // $id_approval = (int) str_replace(array('{', '}'), '', $id_approval);
+        // $approval = $this->authRepository->getUserById($id_approval);
+        // $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
+        // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
-    //             $writer = new PngWriter();
+        if ($letter->nomor_surat != null){
+            $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
 
-    //             // Write the QR code to a file
-    //             $result = $writer->write($qrCode);
-    //             $result->saveToFile($qrCodeFilePath );
-    //             $templateProcessor->setImageValue('barcode', array('path' => $qrCodeFilePath, 'width' => 200, 'height' => 200));
-    //         } else {
-    //             $templateProcessor->setValue('barcode',"not yet assigned");
-    //         }
+                            // Generate a QR code
+            $qrCode = new QrCode($link);
+            $qrCodeFilePath = public_path("qrcode" . "_". $letter->id . ".png");
 
-            
-    //         $outputPath = public_path($attachment . "_" . $letter->id . ".docx");
-    //         $templateProcessor->saveAs($outputPath);
+            $writer = new PngWriter();
+
+            // Write the QR code to a file
+            $result = $writer->write($qrCode);
+            $result->saveToFile($qrCodeFilePath );
+            $templateProcessor->setImageValue('barcode', array('path' => $qrCodeFilePath, 'width' => 200, 'height' => 200));
+        } else {
+            $templateProcessor->setValue('barcode',"not yet assigned");
+        }
+
+        
+        $outputPath = public_path($attachment . "_" . $letter->id . ".docx");
+        $templateProcessor->saveAs($outputPath);
 
 
-    
-           
-    //         $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
 
-    //         // Command to convert DOCX to PDF using LibreOffice
-    //         $command = "soffice --headless --convert-to pdf \"$outputPath\" --outdir \"" . dirname($pdfPath) . "\" 2>&1";
+       
+        $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
 
-    //         // Execute the command
-    //         exec($command, $output, $returnCode);
+        // Command to convert DOCX to PDF using LibreOffice
+        $command = "soffice --headless --convert-to pdf \"$outputPath\" --outdir \"" . dirname($pdfPath) . "\" 2>&1";
 
-            
-    //         if ($returnCode === 0) {
-    //             // Get Docx and PDF Contents
-    //             $pdfContent = file_get_contents($pdfPath);
-    //             $docxContent = file_get_contents($outputPath);
+        // Execute the command
+        exec($command, $output, $returnCode);
+    }
 
-    //             // Return the PDF content or handle it accordingl
-    //             return response()->json(['message'=> "attachment fetched succesfully",'pdf_content' => base64_encode($pdfContent), 'docx_content' => base64_encode($docxContent)  ], 200);
-    //         } else {
-    //             // Command execution failed, handle the error
-    //             return response()->json(['Error' => "Error executing LibreOffice command: " . implode("\n", $output)], 500);
-                
-    //         }
-    
 
-    //         // return response()->json(['message' => 'Document generated successfully'], 200);
-    //     } catch (Exception $e) {
-    //         return response()->json(['message' =>  $e->getMessage()], 500);
-    //     }
-    // }
+
     public function generateDocument(Request $request)
     {
         try {
