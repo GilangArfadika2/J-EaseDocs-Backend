@@ -50,7 +50,7 @@ class NotifMail extends Mailable
             // Set the HTML content for the userString
             $this->html("<p>you letter with title : $letterTitle is Approved by $role $userString </p><p> Feedback : $feedback");
         } else {
-            $this->subject("Letter  Rejected by $role $userString");
+            $this->subject("Letter Rejected by $role $userString");
 
             // Set the HTML content for the userString
             $this->html("<p>you letter with title : $letterTitle is Rejected by $role $userString </p><p> Feedback : $feedback");

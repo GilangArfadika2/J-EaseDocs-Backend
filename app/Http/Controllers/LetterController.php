@@ -14,6 +14,7 @@ use App\Repositories\AuthRepository;
 use App\DTO\Letter\TemplateFieldDTO;
 use App\Repositories\NotifikasiRepository;
 // use Dompdf\Dompdf;
+
 use Illuminate\Support\Facades\File;
 use Ibnuhalimm\LaravelPdfToHtml\Facades\PdfToHtml;
 use Illuminate\Support\Facades\View;
@@ -146,7 +147,7 @@ class LetterController extends Controller
 
            $letter = $this->letterRepository->createLetter($data);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
-           $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
+           $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
            GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
@@ -164,7 +165,7 @@ class LetterController extends Controller
         }
 
         $createdOTP = $this->otpRepository->resendOtp($email,$id);
-        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                 // error_log($link);
         Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
 
@@ -235,6 +236,14 @@ class LetterController extends Controller
         $letterId = $request->input('letter_id');
         $email = $request->input('email');
         $feedback = $request->input('message');
+        if ($feedback === null ){
+            return response()->json(['code' => 400, 'message' => "Feedback field is empty!" ], 400);
+         
+        }
+        if (strlen($feedback ) <= 9){
+            return response()->json(['code' => 400, 'message' => "Feedback must be greater than 9 characters!"], 400);
+        }
+
         // error_log($email);
         
         // error_log($userId);
@@ -370,7 +379,7 @@ class LetterController extends Controller
                         $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
                         $createdOTP = $this->otpRepository->generateOtp($letter->email_pemohon,$letterId);
-                        $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
+                        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
                         //                 Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
                         $log = new Log();
                         $log->letter_id = $letterId;
@@ -378,7 +387,8 @@ class LetterController extends Controller
                         $log->user_id = $letterTemplate->id_approval;
                         $this->logRepository->create($log->getAttributes());
                         $this->letterRepository->updateLetterStatus($letterId, $decision);
-                        $this->generateDocument($letter);
+                       $letterNew = $this->letterRepository->getLetterByID($letterId);
+                        $this->generateDocumentLetter($letterNew);
                     }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
@@ -393,7 +403,8 @@ class LetterController extends Controller
                    
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
                      $this->letterRepository->updateLetterStatus($letterId, $decision);
-                     $this->generateDocument($letter);
+                    $letterNew = $this->letterRepository->getLetterByID($letterId);
+                     $this->generateDocumentLetter($letterNew);
                     
                      $log = new Log();
                      $log->letter_id = $letterId;
@@ -693,7 +704,11 @@ class LetterController extends Controller
         return $encoded;
     }
     
-    private function generateDocumentLetter($letter)
+
+
+    
+
+    public function generateDocumentLetter($letter)
     {
         $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
         $attachment = $letterTemplate->attachment;
@@ -783,7 +798,7 @@ class LetterController extends Controller
         // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
         if ($letter->nomor_surat != null){
-            $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
+            $link = 'http://202.10.36.4:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
 
                             // Generate a QR code
             $qrCode = new QrCode($link);
@@ -814,9 +829,6 @@ class LetterController extends Controller
         // Execute the command
         exec($command, $output, $returnCode);
     }
-
-
-
     public function generateDocument(Request $request)
     {
         try {

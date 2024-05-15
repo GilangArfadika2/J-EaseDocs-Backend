@@ -9,19 +9,34 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LetterController;
 use Illuminate\Support\Facades\Cache;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use App\Validations\AuthValidation; 
 use Illuminate\Support\Facades\Cache;
+=======
+use Illuminate\Support\Facades\File;
+use App\Models\LogAdmin;
+use App\Repositories\LogAdminRepository;
+use App\Repositories\AuthRepository;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
+
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
 class LetterTemplateController extends Controller
 {
     protected $letterTemplateRepository;
     protected $letterController;
+    protected $logAdminRepository;
+    protected $authRepository;
 
-    public function __construct(LetterTemplateRepository $letterTemplateRepository, LetterController $letterController)
+    public function __construct(LetterTemplateRepository $letterTemplateRepository, LetterController $letterController, LogAdminRepository $logAdminRepository,  AuthRepository $authRepository)
     {
         $this->letterTemplateRepository = $letterTemplateRepository;
         $this->letterController  = $letterController;
+        $this->authRepository = $authRepository;
+        $this->logAdminRepository = $logAdminRepository;
+
     }
 
     public function index()
@@ -89,6 +104,16 @@ class LetterTemplateController extends Controller
     public function CreateLetterTemplate(Request $request)
     {
         if ($request->hasFile('attachment')) {
+            if (!$request->hasCookie('jwt_token')) {
+                return response()->json(['message' => 'Missing token cookie'], 401);
+            }
+            $token = $request->cookie('jwt_token');
+            $user = Auth::guard('web')->setToken($token)->user();
+        
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
            
             
             
@@ -98,10 +123,10 @@ class LetterTemplateController extends Controller
                 $directory = 'public/template';
 
               
-                Storage::makeDirectory($directory);
-
-                
-                Storage::putFileAs($directory, $file, $fileName);
+                if (!File::exists(public_path($directory))) {
+                    File::makeDirectory(public_path($directory), 0777, true, true);
+                }
+                $file->move(public_path($directory), $fileName);
             $validationRules = [
                 'id_admin' => 'required|numeric|exists:user,id',
                 'id_checker' => 'required|string',
@@ -109,11 +134,17 @@ class LetterTemplateController extends Controller
                 'perihal' => 'required|string',
                 'priority' => 'required|integer|between:1,5',
                 'isian' => 'required|string',
+                
             ];
             $validator = Validator::make($request->all(),$validationRules);
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
+            $logAdmin = new LogAdmin();
+        $logAdmin->user_id = $user->id;
+        $logAdmin->action = "User " . $user->name .   " with role " . $user->role .   " has created new template: " . $request->input("perihal");
+        $this->logAdminRepository->create($logAdmin->getAttributes());
+
             $template = $this->letterTemplateRepository->create($request->all(),$fileName);
             return response()->json(['message' => 'letter template created succesfully' , 'data' => $template],200);
         } else {
