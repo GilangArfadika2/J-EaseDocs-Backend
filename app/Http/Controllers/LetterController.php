@@ -147,7 +147,7 @@ class LetterController extends Controller
 
            $letter = $this->letterRepository->createLetter($data);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
-           $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
+           $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
            GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
@@ -165,7 +165,7 @@ class LetterController extends Controller
         }
 
         $createdOTP = $this->otpRepository->resendOtp($email,$id);
-        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                 // error_log($link);
         Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
 
@@ -236,6 +236,7 @@ class LetterController extends Controller
         $letterId = $request->input('letter_id');
         $email = $request->input('email');
         $feedback = $request->input('message');
+        $isGenerateDocument = false;
         // error_log($email);
         
         // error_log($userId);
@@ -296,9 +297,8 @@ class LetterController extends Controller
             } else {
                  $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listCheckerId, $letterId);
                  $this->letterRepository->updateLetterStatus($letterId, $decision);
-                 $job = new GenerateDocumentJob($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository);
-                 $job->handle();
 
+                 $isGenerateDocument = true;
             }
             
             // $listUser = $this->authRepository->getUserByListId( $listCheckerId);  
@@ -371,7 +371,7 @@ class LetterController extends Controller
                         $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
                         $createdOTP = $this->otpRepository->generateOtp($letter->email_pemohon,$letterId);
-                        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
+                        $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
                         //                 Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
                         $log = new Log();
                         $log->letter_id = $letterId;
@@ -379,9 +379,7 @@ class LetterController extends Controller
                         $log->user_id = $letterTemplate->id_approval;
                         $this->logRepository->create($log->getAttributes());
                         $this->letterRepository->updateLetterStatus($letterId, $decision);
-                       $letterNew = $this->letterRepository->getLetterByID($letterId);
-                        $this->generateDocumentLetter($letterNew);
-                    }
+                        $isGenerateDocument = true;                    }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
                     // $userString =  $letter->nama_atasan_pemohon . " NIP : " . $letter->nip_atasan_pemohon;
@@ -395,9 +393,7 @@ class LetterController extends Controller
                    
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
                      $this->letterRepository->updateLetterStatus($letterId, $decision);
-                    $letterNew = $this->letterRepository->getLetterByID($letterId);
-                     $this->generateDocumentLetter($letterNew);
-                    
+                     $isGenerateDocument = true;                    
                      $log = new Log();
                      $log->letter_id = $letterId;
                      $log->status = "rejected";
@@ -422,17 +418,24 @@ class LetterController extends Controller
                 }
     
                 $this->letterRepository->updateLetterNomorSurat($letterId,null);
-                $this->letterRepository->updateLetterStatus($letterId, $decision);
-                GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10));
-            }
+                $isGenerateDocument = true;           
+             }
 
          
 
             
 
         }
+        if ($isGenerateDocument ){
 
-    
+            $error = $this->generateDocumentLetter($letter,$decision);
+            if ($error != null){
+                return response()->json(['message' =>  $error], 500);
+            }
+   
+        }
+       
+
         return response()->json(['message' => 'update letter success'], 200);
     }
         catch (Exception $e) {
@@ -700,8 +703,10 @@ class LetterController extends Controller
 
     
 
-    public function generateDocumentLetter($letter)
+    public function generateDocumentLetter($letter, $decision)
     {
+
+        try {
         $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
         $attachment = $letterTemplate->attachment;
         // Load the DOCX template
@@ -747,13 +752,13 @@ class LetterController extends Controller
         $templateProcessor->setValue("tanggal_permohonan", $tanggal_permohonan);
         $templateProcessor->setValue("tanggal_permohonan", $letter->created_at);
         $templateProcessor->setValue("keputusan", $letter->status);
-        if ($letter->approved_at != null){
+        if ($decision === "approved" &&  $decision === "rejected"){
             $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
              $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
-             $templateProcessor->setValue("keputusan", $letter->status);
+             $templateProcessor->setValue("keputusan",$decision);
         } else {
             $templateProcessor->setValue("tanggal_penyetujuan", "");
-            $templateProcessor->setValue("tanggal_penyetujuan", "on-progress");
+            $templateProcessor->setValue("keputusan", $decision);
         }
         $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
         $templateProcessor->setValue("email_pemohon",$letter->email_pemohon);
@@ -789,8 +794,8 @@ class LetterController extends Controller
         // $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
         // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
-        if ($letter->nomor_surat != null){
-            $link = 'http://202.10.36.4:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
+        if ($decision === "approved"){
+            $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
 
                             // Generate a QR code
             $qrCode = new QrCode($link);
@@ -808,18 +813,32 @@ class LetterController extends Controller
 
         
         $outputPath = public_path($attachment . "_" . $letter->id . ".docx");
-        $templateProcessor->saveAs($outputPath);
+ +       $templateProcessor->saveAs($outputPath);
 
 
 
        
         $pdfPath = public_path($attachment . "_" . $letter->id . ".pdf");
 
+        if (file_exists($pdfPath)) {
+            unlink($pdfPath);
+        }
+
         // Command to convert DOCX to PDF using LibreOffice
         $command = "soffice --headless --convert-to pdf \"$outputPath\" --outdir \"" . dirname($pdfPath) . "\" 2>&1";
 
+        error_log("command libre office : " .  $command);
+
         // Execute the command
         exec($command, $output, $returnCode);
+        if ($returnCode !== 0) {
+            return "Command failed with return code: " . $returnCode . " : " . implode("\n", $output);
+       } else {
+           return null;
+       }
+    } catch (Exception $e){
+        return $e->getMessage();
+    }
     }
     public function generateDocument(Request $request)
     {

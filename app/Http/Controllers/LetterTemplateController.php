@@ -16,6 +16,7 @@ use App\Repositories\AuthRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 
+
 class LetterTemplateController extends Controller
 {
     protected $letterTemplateRepository;
@@ -91,6 +92,9 @@ class LetterTemplateController extends Controller
 
     public function CreateLetterTemplate(Request $request)
     {
+        try {
+
+        
         if ($request->hasFile('attachment')) {
             if (!$request->hasCookie('jwt_token')) {
                 return response()->json(['message' => 'Missing token cookie'], 401);
@@ -108,7 +112,7 @@ class LetterTemplateController extends Controller
                 $file = $request->file('attachment');
 
                 $fileName =  $file->getClientOriginalName();
-                $directory = 'public/template';
+                $directory = '\template';
 
               
                 if (!File::exists(public_path($directory))) {
@@ -138,6 +142,9 @@ class LetterTemplateController extends Controller
         } else {
             return response()->json(['message' => 'there is no file in the input'], 400);
         }
+    } catch (Exception $e){
+        return response()->json(['message' => $e->getMessage()], 500);
+    }
     }
 
     public function UpdateLetterTemplate(Request $request)
