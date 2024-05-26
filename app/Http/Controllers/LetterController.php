@@ -14,6 +14,7 @@ use App\Repositories\AuthRepository;
 use App\DTO\Letter\TemplateFieldDTO;
 use App\Repositories\NotifikasiRepository;
 // use Dompdf\Dompdf;
+
 use Illuminate\Support\Facades\File;
 use Ibnuhalimm\LaravelPdfToHtml\Facades\PdfToHtml;
 use Illuminate\Support\Facades\View;
@@ -146,7 +147,7 @@ class LetterController extends Controller
 
            $letter = $this->letterRepository->createLetter($data);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
-           $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
+           $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
            GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
@@ -164,7 +165,7 @@ class LetterController extends Controller
         }
 
         $createdOTP = $this->otpRepository->resendOtp($email,$id);
-        $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
+        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $member['email'];
                 // error_log($link);
         Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
 
@@ -370,7 +371,7 @@ class LetterController extends Controller
                         $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
                         $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
                         $createdOTP = $this->otpRepository->generateOtp($letter->email_pemohon,$letterId);
-                        $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
+                        $link = "http://202.10.36.4:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
                         //                 Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
                         $log = new Log();
                         $log->letter_id = $letterId;
@@ -378,7 +379,12 @@ class LetterController extends Controller
                         $log->user_id = $letterTemplate->id_approval;
                         $this->logRepository->create($log->getAttributes());
                         $this->letterRepository->updateLetterStatus($letterId, $decision);
+<<<<<<< HEAD
                         $this->generateDocument($letter);
+=======
+                       $letterNew = $this->letterRepository->getLetterByID($letterId);
+                        $this->generateDocumentLetter($letterNew);
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
                     }
                     
                     // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
@@ -393,7 +399,12 @@ class LetterController extends Controller
                    
                      $this->letterRepository->updateLetterNomorSurat($letterId,null);
                      $this->letterRepository->updateLetterStatus($letterId, $decision);
+<<<<<<< HEAD
                      $this->generateDocument($letter);
+=======
+                    $letterNew = $this->letterRepository->getLetterByID($letterId);
+                     $this->generateDocumentLetter($letterNew);
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
                     
                      $log = new Log();
                      $log->letter_id = $letterId;
@@ -705,10 +716,31 @@ class LetterController extends Controller
         // Create a TemplateProcessor instance
         $templateProcessor = new TemplateProcessor($templatePath);
 
+<<<<<<< HEAD
         
         // Define data to render
         $data =  json_decode( $letter->data ,true);
 
+=======
+    
+
+    public function generateDocumentLetter($letter)
+    {
+        $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
+        $attachment = $letterTemplate->attachment;
+        // Load the DOCX template
+        // $templatePath = storage_path("app\\public\\template\\" . $attachment);
+        $templatePath = public_path("template/" . $attachment);
+
+        
+        // Create a TemplateProcessor instance
+        $templateProcessor = new TemplateProcessor($templatePath);
+
+        
+        // Define data to render
+        $data =  json_decode( $letter->data ,true);
+
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
         // Fill the template with data
         foreach ($data as $key => $value) {
             // error_log($value);
@@ -783,7 +815,11 @@ class LetterController extends Controller
         // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
 
         if ($letter->nomor_surat != null){
+<<<<<<< HEAD
             $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
+=======
+            $link = 'http://202.10.36.4:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
 
                             // Generate a QR code
             $qrCode = new QrCode($link);
@@ -810,6 +846,7 @@ class LetterController extends Controller
 
         // Command to convert DOCX to PDF using LibreOffice
         $command = "soffice --headless --convert-to pdf \"$outputPath\" --outdir \"" . dirname($pdfPath) . "\" 2>&1";
+<<<<<<< HEAD
 
         // Execute the command
         exec($command, $output, $returnCode);
@@ -817,6 +854,12 @@ class LetterController extends Controller
 
 
 
+=======
+
+        // Execute the command
+        exec($command, $output, $returnCode);
+    }
+>>>>>>> 043fb1d9ad89df80fa15d65cd47bd2f77de363a0
     public function generateDocument(Request $request)
     {
         try {

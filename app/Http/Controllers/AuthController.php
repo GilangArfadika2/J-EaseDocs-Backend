@@ -151,6 +151,7 @@ class AuthController extends Controller
                 $response = response()->json([
                     'message' => 'User is already logged in',
                     'log_in' => 'true',
+                    'id' => $user->id,
                     'role' => $user->role,
                     'email' => $user->email
                 ], 200);
@@ -338,48 +339,7 @@ class AuthController extends Controller
         }
     }
 
-    public function registerGetter(Request $request){
-        $superadmin=AuthController::checkSuperAdmin($request);
-        if($superadmin===true){
-            return view('register');
-        }
-        else{
-            return view('register-penggunaOnly');
-        }
-        
-    }
 
-    public function updateUserGetter(Request $request){
-        //check the role of user profile
-        $request->merge(['id' => $request->route('id')]);
-            $validator = Validator::make($request->all(), AuthValidation::getUserIDRules());
-            
-            if ($validator->fails()) {
-                return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
-            }
-
-            // Retrieve email and OTP from the request
-            $id = $request->input('id');
-
-            $user = $this->authRepository->getUserById($id);
-            $_SESSION['user']=$user;
-            if(!$user){
-                return response()->json(['message' => 'User not found', 'data' => $id],200);
-            }
-
-        //check the role of change implementor
-        $superadmin=AuthController::checkSuperAdmin($request);
-        switch($user['role']){
-            case "admin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            case "superadmin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            default:
-            if($superadmin===true)return view('updateUser');
-            else return view('updatePenggunaOnly');
-
-        }
-    }
 
     public function updateUser(Request $request){
         // $request->merge(['id' => $request->route('id')]);

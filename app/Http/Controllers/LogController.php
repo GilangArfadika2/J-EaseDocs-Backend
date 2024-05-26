@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Spatie\PdfToText\Pdf;
 use App\Repositories\OtpRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\LogAdminRepository;
 use App\Repositories\AuthRepository;
 use App\Repositories\NotifikasiRepository;
 // use Dompdf\Dompdf;
@@ -39,8 +40,9 @@ class LogController extends Controller
     protected $authRepository;
     protected $notifikasiRepository;
     protected $logRepository;
+    protected $logAdminRepository;
     public function __construct(LetterRepository $letterRepository,LetterTemplateRepository $letterTemplateRepository,  OtpRepository $otpRepository, AuthRepository $authRepository, NotifikasiRepository $notifikasiRepository
-    ,LogRepository $logRepository)
+    ,LogRepository $logRepository, LogAdminRepository $logAdminRepository)
     {
         $this->letterRepository = $letterRepository;
         $this->otpRepository = $otpRepository;
@@ -48,6 +50,7 @@ class LogController extends Controller
         $this->notifikasiRepository = $notifikasiRepository;
         $this->letterTemplateRepository = $letterTemplateRepository;
         $this->logRepository = $logRepository;
+        $this->logAdminRepository = $logAdminRepository;
     }
 
     public function index()
@@ -89,7 +92,15 @@ class LogController extends Controller
         $this->logRepository->delete($id);
         return response()->json(['message' => 'Log deleted successfully']);
     }
+    public function getAllAdmin(Request $request){
+        try{
+            $logAll = $this->logAdminRepository->getAll();
+            return response()->json(['message' => 'log fetched succesfully' , 'data' =>  $logAll],200);
+        }
+        catch(Exception $e){
 
+        }
+    }
 
     
 }

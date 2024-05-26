@@ -70,7 +70,8 @@ class GenerateDocumentJob implements ShouldQueue
         $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
         $attachment = $letterTemplate->attachment;
         // Load the DOCX template
-        // $templatePath = storage_path("app\\public\\template\\" . $attachment);
+        // $templatePath = storage_path("app\\public\\template\
+
         $templatePath = public_path("template/" . $attachment);
 
         
