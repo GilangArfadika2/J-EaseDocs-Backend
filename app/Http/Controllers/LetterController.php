@@ -427,8 +427,8 @@ class LetterController extends Controller
 
         }
         if ($isGenerateDocument ){
-
-            $error = $this->generateDocumentLetter($letter,$decision);
+            $letterNew = $this->letterRepository->getLetterByID($letterId);
+            $error = $this->generateDocumentLetter($letterNew,$decision);
             if ($error != null){
                 return response()->json(['message' =>  $error], 500);
             }

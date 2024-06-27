@@ -98,7 +98,7 @@ class LetterRepository
         $createdLetter = Letter::create([
             'id_template_surat' =>  $data['id_template_surat'],
             'data' => json_encode( $data['data']),
-            'status' => "on-progress",
+            'status' => "pending",
             // 'nomor_surat' =>  $data['nomor_surat'],
             'nama_pemohon' =>  $data['nama_pemohon'],
             'email_pemohon' =>  $data['email_pemohon'],
