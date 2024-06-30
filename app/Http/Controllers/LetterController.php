@@ -554,9 +554,6 @@ class LetterController extends Controller
             // $id = $request->input('id');
             $letter = $this->letterTemplateRepository->getById($id);
     
-            // Decode the JSON data
-            // $letter->isian= json_decode($letter->isian);
-            // $letter->member = json_decode($letter->member);
 
             $isian = json_decode($letter->isian);
 
@@ -880,8 +877,23 @@ class LetterController extends Controller
             if ($validator->fails()) {
                 return response()->json(['message' => $validator->errors()], 400);
             }
+               
+           
+            if (  $request->input("email") != null ){
+                $result = $this->letterRepository->checkEmailValidation($request->input("letter_id"),$request->input("email"));
+                // error_log($result);
+                if ( $result != null  ){
+                    if ($result->status != "pending"){
+                        return response()->json(['message' => "letter's approval can only been accessed once"], 400);
+                    }
+                } else {
+                    return response()->json(['message' => "invalid email"], 400);
+                }
+                
+            }
 
             $letter = $this->letterRepository->getLetterById($request->input("letter_id"));
+           
             $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
             $attachment = $letterTemplate->attachment;
 
