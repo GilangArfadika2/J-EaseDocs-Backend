@@ -149,13 +149,15 @@ class LetterController extends Controller
            $letter = $this->letterRepository->createLetter($data,$nomorSurat);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
            $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
-           Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
-           GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
-           
+          
            $startingLog = new Log();
            $startingLog->letter_id = $letterId;
            $startingLog->status ="pending";
            $startingLog->user_id = $letterTemplate->id_admin;
+           Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
+           GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
+           
+          
 
            $this->logRepository->create($startingLog->getAttributes());
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
@@ -302,12 +304,17 @@ class LetterController extends Controller
                     $progressLog->letter_id = $letterId;
                     $progressLog->status ="on-progress";
                     $progressLog->user_id = $letterTemplate->id_admin;
-                    $this->logRepository->create($progresslog->getAttributes());
+                    $this->logRepository->create($progressLog->getAttributes());
                     
                     $this->letterRepository->updateLetterStatus($letterId, "on-progress");
                 }   
 
             } else {
+                $progressLog = new Log();
+                $progressLog->letter_id = $letterId;
+                $progressLog->status ="rejected";
+                $progressLog->user_id = $letterTemplate->id_admin;
+                $this->logRepository->create($progressLog->getAttributes());
                  $this->notifikasiRepository->deleteNotifikasiByListUserAndLetterId($listCheckerId, $letterId);
                  $this->letterRepository->updateLetterStatus($letterId, $decision);
 
