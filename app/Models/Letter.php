@@ -30,6 +30,7 @@ class Letter extends Model
         'nama_atasan_pemohon',
         'email_atasan_pemohon',
         'nip_atasan_pemohon',
+        'jabatan_atasan_pemohon',
         'approved_at'
         
 

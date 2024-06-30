@@ -48,7 +48,7 @@ use App\Http\Controllers\LetterTemplateController;
         Route::post('letter/new', [LetterController::class,'CreateLetter']);
         Route::patch('letter/update', [LetterController::class, 'updateLetter']);
         Route::post('letter', [LetterController::class, 'getAllLetter']);
-        Route::post('letter/detail', [LetterController::class, 'getLetterById']);
+        Route::post('letter/detail', [LetterController::class, 'getLetterByID']);
         Route::get('letter-template/isian/{id}', [LetterController::class, 'getLetterTemplateFieldByID']);
         // getLetterDataFileByID
 
@@ -71,7 +71,7 @@ use App\Http\Controllers\LetterTemplateController;
         Route::get('/inbox/countUnread', [LetterController::class,"getUnreadNotificationCount"]);
         Route::get('/logAudit', [LogController::class,'getAllAdmin']);
         Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
-        Route::get('/log/{letterId}', [LogController::class, 'getLogSurat']);
+        Route::get('/log/{nomorSurat}', [LogController::class, 'getLogSurat']);
         
 
 // Additional routes...

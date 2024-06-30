@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LetterController;
 use Illuminate\Support\Facades\Cache;
+use PhpOffice\PhpWord\TemplateProcessor;
+
 
 class LetterTemplateController extends Controller
 {
@@ -85,29 +87,30 @@ class LetterTemplateController extends Controller
 
     public function CreateLetterTemplate(Request $request)
     {
+        
         if ($request->hasFile('attachment')) {
            
+            error_log("TEST~~A");
+            
+                $file = $request->file('attachment');
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $filename = pathinfo($originalName, PATHINFO_FILENAME);
+                
+                $directory = 'template';
+                $templatePath = public_path($directory);
+                
+                
+                $uniqueFilename = $originalName;
+                $counter = 1;
+                
+            
+                while (file_exists($templatePath . '/' . $uniqueFilename)) {
+                    $uniqueFilename = $filename . '_' . $counter . '.' . $extension;
+                    $counter++;
+                }
             
             
-            $file = $request->file('attachment');
-            $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
-            $filename = pathinfo($originalName, PATHINFO_FILENAME);
-            
-            $directory = 'template';
-            $templatePath = public_path($directory);
-            
-            // Initialize the unique filename with the original filename and extension
-            $uniqueFilename = $originalName;
-            $counter = 1;
-            
-            // Check for duplicate filenames and modify the filename if needed
-            while (file_exists($templatePath . '/' . $uniqueFilename)) {
-                $uniqueFilename = $filename . '_' . $counter . '.' . $extension;
-                $counter++;
-            }
-            
-            // Save the file
             $file->move($templatePath, $uniqueFilename);
             $validationRules = [
                 'id_admin' => 'required|numeric|exists:user,id',

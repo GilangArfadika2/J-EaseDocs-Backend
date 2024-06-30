@@ -125,7 +125,7 @@ class LetterController extends Controller
     public function CreateLetter(Request $request){
 
         try { 
-           
+           error_log("masuk!!");
             $data = $request->all();
             $validator = Validator::make($data, LetterValidation::createLetterRules());
             if ($validator->fails()) {
@@ -151,6 +151,13 @@ class LetterController extends Controller
            $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
            GenerateDocumentJob::dispatch($letter, $this->authRepository, $this->letterRepository, $this->letterTemplateRepository)->delay(now()->addSeconds(10)); // Example delay
+           
+           $startingLog = new Log();
+           $startingLog->letter_id = $letterId;
+           $startingLog->status ="pending";
+           $startingLog->user_id = $letterTemplate->id_admin;
+
+           $this->logRepository->create($startingLog->getAttributes());
             return response()->json(['message' => 'Letter registered successfully', 'data' => $createdOTP['id']], 200);
         } catch (Exception $e) {
             return response()->json(['message' =>  $e->getMessage()], 500);
@@ -238,7 +245,7 @@ class LetterController extends Controller
         $email = $request->input('email');
         $feedback = $request->input('message');
         $isGenerateDocument = false;
-        // error_log($email);
+        
         
         // error_log($userId);
         $letter = $this->letterRepository->getLetterByID($letterId);
@@ -250,7 +257,7 @@ class LetterController extends Controller
         $notifikasi = false;
 
         $isDecisionAssigned = false;
-        // error_log($letterTemplate->id_approval );
+        
       
         $trimmedStringChecker = trim($letterTemplate->id_checker, '{}');
         $integerChecker = explode(',', $trimmedStringChecker);
@@ -288,11 +295,16 @@ class LetterController extends Controller
                     $notifikasi->letter_id = $letterId;
                     $notifikasi->decision = "on-progress";
 
-                    $this->letterRepository->updateLetterStatus($letterId, "on-progress");
-    
-                    // $notifikasiArray = (array) $notifikasi;
                     $notifikasiArray = $notifikasi->getAttributes();
                     $this->notifikasiRepository->create( $notifikasiArray);
+
+                    $progressLog = new Log();
+                    $progressLog->letter_id = $letterId;
+                    $progressLog->status ="on-progress";
+                    $progressLog->user_id = $letterTemplate->id_admin;
+                    $this->logRepository->create($progresslog->getAttributes());
+                    
+                    $this->letterRepository->updateLetterStatus($letterId, "on-progress");
                 }   
 
             } else {
@@ -382,9 +394,6 @@ class LetterController extends Controller
                         $this->letterRepository->updateLetterStatus($letterId, $decision);
                         $isGenerateDocument = true;                    }
                     
-                    // // $listUser = $this->authRepository->getUserByListId($letterTemplate->id_checker);  
-                    // $userString =  $letter->nama_atasan_pemohon . " NIP : " . $letter->nip_atasan_pemohon;
-                    // Mail::to($pemohonEmail)->send(new NotifMail($header, $decision, $role,  $userString ,$feedback));
                 } else {
 
                     $listUserString = implode(', ', $listUser);
@@ -485,6 +494,20 @@ class LetterController extends Controller
         
         
     }
+    public function getLetterByReceiptNumber(Request $request){
+        try {
+            $id = $request->input('id');
+            $letter = $this->letterRepository->getLetterByReceiptNumber($id);
+    
+            // Decode the JSON data
+            $letter->data = json_decode($letter->data);
+    
+            return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+    
+    }
 
     public function getLetterByID(Request $request){
 
@@ -494,7 +517,6 @@ class LetterController extends Controller
     
             // Decode the JSON data
             $letter->data = json_decode($letter->data);
-            $letter->member = json_decode($letter->member);
     
             return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
         } catch (Exception $e) {
@@ -766,6 +788,7 @@ class LetterController extends Controller
         $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
         $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
         $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
+        $templateProcessor->setValue("jabatan_atasan_pemohon", $letter->jabatan_atasan_pemohon);
         $id_approval = $letterTemplate->id_approval;
         $id_approval_array = explode(',', str_replace(array('{', '}'), '', $id_approval));
         if (count($id_approval_array) > 1) {
