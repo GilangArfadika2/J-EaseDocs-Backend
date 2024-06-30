@@ -144,8 +144,9 @@ class LetterController extends Controller
             if ($formDataValidator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $formDataValidator->errors()], 400);
             }
+            $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
 
-           $letter = $this->letterRepository->createLetter($data);
+           $letter = $this->letterRepository->createLetter($data,$nomorSurat);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
            $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
@@ -369,7 +370,7 @@ class LetterController extends Controller
 
                     } else {
                         $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
-                        $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
+                        // $this->letterRepository->updateLetterNomorSurat($letterId,  $nomorSurat);
                         $createdOTP = $this->otpRepository->generateOtp($letter->email_pemohon,$letterId);
                         $link = "http://localhost:3000/J-EaseDoc/letter/arsip/" . $createdOTP['id'] ."/" . $letter->email_pemohon;
                         //                 Mail::to($createdOTP['email'])->queue(new OtpMail($createdOTP['code'] , $link));
@@ -391,7 +392,7 @@ class LetterController extends Controller
                     Mail::to($letter->email_atasan_pemohon)->queue(new NotifMail($header, $decision, $role,  $listUserString ,$feedback)); 
                     
                    
-                     $this->letterRepository->updateLetterNomorSurat($letterId,null);
+                    //  $this->letterRepository->updateLetterNomorSurat($letterId,null);
                      $this->letterRepository->updateLetterStatus($letterId, $decision);
                      $isGenerateDocument = true;                    
                      $log = new Log();
@@ -417,7 +418,7 @@ class LetterController extends Controller
                     $log->user_id = $letterTemplate->id_approval;
                 }
     
-                $this->letterRepository->updateLetterNomorSurat($letterId,null);
+                // $this->letterRepository->updateLetterNomorSurat($letterId,null);
                 $isGenerateDocument = true;           
              }
 

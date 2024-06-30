@@ -89,16 +89,26 @@ class LetterTemplateController extends Controller
            
             
             
-                $file = $request->file('attachment');
-
-                $fileName =  $file->getClientOriginalName();
-                $directory = 'public/template';
-
-              
-                Storage::makeDirectory($directory);
-
-                
-                Storage::putFileAs($directory, $file, $fileName);
+            $file = $request->file('attachment');
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $filename = pathinfo($originalName, PATHINFO_FILENAME);
+            
+            $directory = 'template';
+            $templatePath = public_path($directory);
+            
+            // Initialize the unique filename with the original filename and extension
+            $uniqueFilename = $originalName;
+            $counter = 1;
+            
+            // Check for duplicate filenames and modify the filename if needed
+            while (file_exists($templatePath . '/' . $uniqueFilename)) {
+                $uniqueFilename = $filename . '_' . $counter . '.' . $extension;
+                $counter++;
+            }
+            
+            // Save the file
+            $file->move($templatePath, $uniqueFilename);
             $validationRules = [
                 'id_admin' => 'required|numeric|exists:user,id',
                 'id_checker' => 'required|string',
@@ -111,7 +121,7 @@ class LetterTemplateController extends Controller
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
-            $template = $this->letterTemplateRepository->create($request->all(),$fileName);
+            $template = $this->letterTemplateRepository->create($request->all(),$uniqueFilename);
             return response()->json(['message' => 'letter template created succesfully' , 'data' => $template],200);
         } else {
             return response()->json(['message' => 'there is no file in the input'], 400);

@@ -25,7 +25,7 @@ class LetterRepository
 
         $listLetter = DB::table('surat')
         ->join('template_surat', 'surat.id_template_surat', '=', 'template_surat.id')
-        ->whereNotNull('nomor_surat')
+        ->where("surat.status","=","approved")
         ->select('surat.*', 'template_surat.perihal', 'template_surat.priority', 'template_surat.attachment')
         ->orderByDesc('template_surat.priority')
         ->get();
@@ -90,7 +90,7 @@ class LetterRepository
         return DB::table('surat')->where("nomor_surat",$nomorSurat)->first();
     }
 
-    public function createLetter(array $data) : Letter
+    public function createLetter(array $data,$generatedNomorSurat) : Letter
     {
         
         // $tabelTandaTanganData = end($data['data'])['tabel_tandaTangan'];
@@ -106,7 +106,8 @@ class LetterRepository
             'nama_atasan_pemohon' =>  $data['nama_atasan_pemohon'],
             'email_atasan_pemohon' =>  $data['email_atasan_pemohon'],
             'nip_atasan_pemohon' =>  $data['nip_atasan_pemohon'],
-            'approved_at' => null, // Assuming 'approved_at' is nullable and defaults to null
+            'nomor_surat' => $generatedNomorSurat,
+            'approved_at' => null, 
         ]);
 
         return  $createdLetter;
