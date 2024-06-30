@@ -87,7 +87,7 @@ class AuthController extends Controller
                 60,          // Cookie expiration time in minutes
                 '/',         // Path
                 null,        // Domain (null for any domain)
-                false,        // Secure (set to true if using HTTPS)
+                true,        // Secure (set to true if using HTTPS)
                 true,        // HTTP-only flag
                 false,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
                 'None'       // SameSite attribute set to 'None'
@@ -119,7 +119,7 @@ class AuthController extends Controller
                     time() - 3600, // Expired time in the past
                     '/',
                     null,        // Domain (null for any domain)
-                    false,        // Secure (set to true if using HTTPS)
+                    true,        // Secure (set to true if using HTTPS)
                    true,        // HTTP-only flag
                    false,        // Encrypt (set to true to enable encryption of the cookie value, which is the default behavior)
                    'None'       // SameSite attribute set to 'None'
@@ -137,7 +137,10 @@ class AuthController extends Controller
     public function isLogin(Request $request) {
         try {
             // Check if the result is cached
+            
             $cachedResult = Cache::get('isLoginResult_' . $request->cookie('jwt_token'));
+            // error_log("test2: "+$request->cookie('jwt_token'));
+            error_log($cachedResult);
             if ($cachedResult) {
                 return $cachedResult;
             }

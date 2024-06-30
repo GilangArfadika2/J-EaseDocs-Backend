@@ -21,6 +21,10 @@ class LetterRepository
         return DB::table('surat')->where('id', $id)->first();
     }
 
+    public function getLetterByReceiptNumber($id){
+        return DB::table('surat')->where('nomor_surat', $id)->first();
+    }
+
     public function getAllArsip() {
 
         $listLetter = DB::table('surat')
@@ -92,7 +96,7 @@ class LetterRepository
 
     public function createLetter(array $data) : Letter
     {
-        
+        error_log("MARK1: " . $data['jabatan_atasan_pemohon']);
         // $tabelTandaTanganData = end($data['data'])['tabel_tandaTangan'];
 
         $createdLetter = Letter::create([
@@ -106,6 +110,7 @@ class LetterRepository
             'nama_atasan_pemohon' =>  $data['nama_atasan_pemohon'],
             'email_atasan_pemohon' =>  $data['email_atasan_pemohon'],
             'nip_atasan_pemohon' =>  $data['nip_atasan_pemohon'],
+            'jabatan_atasan_pemohon' => $data['jabatan_atasan_pemohon'],
             'approved_at' => null, // Assuming 'approved_at' is nullable and defaults to null
         ]);
 

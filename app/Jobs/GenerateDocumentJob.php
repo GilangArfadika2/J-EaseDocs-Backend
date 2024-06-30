@@ -122,9 +122,12 @@ class GenerateDocumentJob implements ShouldQueue
             $templateProcessor->setValue("tanggal_penyetujuan", "on-progress");
         }
         $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
+        
         $templateProcessor->setValue("email_pemohon",$letter->email_pemohon);
         $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
         $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
+        $templateProcessor->setValue("jabatan_atasan_pemohon",$letter->jabatan_atasan_pemohon);
+        error_log("Jabatan atasan pemohon: " . $letter->jabatan_atasan_pemohon);
         $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
         $id_approval = $letterTemplate->id_approval;
         $id_approval_array = explode(',', str_replace(array('{', '}'), '', $id_approval));

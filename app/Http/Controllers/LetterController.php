@@ -125,7 +125,7 @@ class LetterController extends Controller
     public function CreateLetter(Request $request){
 
         try { 
-           
+           error_log("masuk!!");
             $data = $request->all();
             $validator = Validator::make($data, LetterValidation::createLetterRules());
             if ($validator->fails()) {
@@ -484,6 +484,20 @@ class LetterController extends Controller
         
         
     }
+    public function getLetterByReceiptNumber(Request $request){
+        try {
+            $id = $request->input('id');
+            $letter = $this->letterRepository->getLetterByReceiptNumber($id);
+    
+            // Decode the JSON data
+            $letter->data = json_decode($letter->data);
+    
+            return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' =>  $e->getMessage()], 500);
+        }
+    
+    }
 
     public function getLetterByID(Request $request){
 
@@ -493,7 +507,6 @@ class LetterController extends Controller
     
             // Decode the JSON data
             $letter->data = json_decode($letter->data);
-            $letter->member = json_decode($letter->member);
     
             return response()->json(['message' => 'Letter fetched successfully', 'data' => $letter ], 200);
         } catch (Exception $e) {
@@ -765,6 +778,7 @@ class LetterController extends Controller
         $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
         $templateProcessor->setValue("nama_atasan_pemohon", $letter->nama_atasan_pemohon);
         $templateProcessor->setValue("nip_atasan_pemohon", $letter->nip_atasan_pemohon);
+        $templateProcessor->setValue("jabatan_atasan_pemohon", $letter->jabatan_atasan_pemohon);
         $id_approval = $letterTemplate->id_approval;
         $id_approval_array = explode(',', str_replace(array('{', '}'), '', $id_approval));
         if (count($id_approval_array) > 1) {

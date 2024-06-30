@@ -29,6 +29,7 @@ class LetterValidation{
             'nip_pemohon' => 'required|numeric',
             'nama_atasan_pemohon' => 'required|string',
             'email_atasan_pemohon' => 'required|email',
+            'jabatan_atasan_pemohon' => 'required|string',
             'nip_atasan_pemohon' => 'required|numeric',
             'approved_at' => 'nullable|date', // Assuming 'approved_at' is a date field
         ];

@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\LetterController;
 use Illuminate\Support\Facades\Cache;
+use PhpOffice\PhpWord\TemplateProcessor;
+
 
 class LetterTemplateController extends Controller
 {
@@ -85,20 +87,31 @@ class LetterTemplateController extends Controller
 
     public function CreateLetterTemplate(Request $request)
     {
+        
         if ($request->hasFile('attachment')) {
            
-            
+            error_log("TEST~~A");
             
                 $file = $request->file('attachment');
-
-                $fileName =  $file->getClientOriginalName();
-                $directory = 'public/template';
-
-              
-                Storage::makeDirectory($directory);
-
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                $filename = pathinfo($originalName, PATHINFO_FILENAME);
                 
-                Storage::putFileAs($directory, $file, $fileName);
+                $directory = 'template';
+                $templatePath = public_path($directory);
+                
+                
+                $uniqueFilename = $originalName;
+                $counter = 1;
+                
+            
+                while (file_exists($templatePath . '/' . $uniqueFilename)) {
+                    $uniqueFilename = $filename . '_' . $counter . '.' . $extension;
+                    $counter++;
+                }
+            
+            
+            $file->move($templatePath, $uniqueFilename);
             $validationRules = [
                 'id_admin' => 'required|numeric|exists:user,id',
                 'id_checker' => 'required|string',
@@ -111,7 +124,7 @@ class LetterTemplateController extends Controller
             if ($validator->fails()) {
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
-            $template = $this->letterTemplateRepository->create($request->all(),$fileName);
+            $template = $this->letterTemplateRepository->create($request->all(),$uniqueFilename);
             return response()->json(['message' => 'letter template created succesfully' , 'data' => $template],200);
         } else {
             return response()->json(['message' => 'there is no file in the input'], 400);
