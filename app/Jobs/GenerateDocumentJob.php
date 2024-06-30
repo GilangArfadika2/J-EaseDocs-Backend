@@ -113,14 +113,14 @@ class GenerateDocumentJob implements ShouldQueue
             $templateProcessor->setValue("tanggal_permohonan", $tanggal_permohonan);
             $templateProcessor->setValue("tanggal_permohonan", $letter->created_at);
             $templateProcessor->setValue("keputusan", $letter->status);
-            if ($decision === "approved" &&  $decision === "rejected"){
-                $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
-                 $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
-                 $templateProcessor->setValue("keputusan",$decision);
-            } else {
-                $templateProcessor->setValue("tanggal_penyetujuan", "");
-                $templateProcessor->setValue("keputusan", $decision);
-            }
+            // if ($decision === "approved" &&  $decision === "rejected"){
+            //     $tanggal_penyetujuan = Carbon::parse($letter->approved_at)->translatedFormat('d F Y');
+            //      $templateProcessor->setValue("tanggal_penyetujuan", $tanggal_penyetujuan);
+            //      $templateProcessor->setValue("keputusan",$decision);
+            // } else {
+            //     $templateProcessor->setValue("tanggal_penyetujuan", "");
+            //     $templateProcessor->setValue("keputusan", $decision);
+            // }
             $templateProcessor->setValue("nama_pemohon",$letter->nama_pemohon);
             $templateProcessor->setValue("email_pemohon",$letter->email_pemohon);
             $templateProcessor->setValue("nip_pemohon",$letter->nip_pemohon);
@@ -156,22 +156,22 @@ class GenerateDocumentJob implements ShouldQueue
             // $templateProcessor->setValue("nama_kepala_divisi",$approval->name);
             // $templateProcessor->setValue("jabatan_kepala_divisi",$approval->jabatan);
     
-            if ($decision === "approved"){
-                $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
+            // if ($decision === "approved"){
+            //     $link = 'http://localhost:3000/api/J-EaseDoc/letter/barcode/' . $letter->nomor_surat;
     
-                                // Generate a QR code
-                $qrCode = new QrCode($link);
-                $qrCodeFilePath = public_path("qrcode" . "_". $letter->id . ".png");
+            //                     // Generate a QR code
+            //     $qrCode = new QrCode($link);
+            //     $qrCodeFilePath = public_path("qrcode" . "_". $letter->id . ".png");
     
-                $writer = new PngWriter();
+            //     $writer = new PngWriter();
     
-                // Write the QR code to a file
-                $result = $writer->write($qrCode);
-                $result->saveToFile($qrCodeFilePath );
-                $templateProcessor->setImageValue('barcode', array('path' => $qrCodeFilePath, 'width' => 200, 'height' => 200));
-            } else {
+            //     // Write the QR code to a file
+            //     $result = $writer->write($qrCode);
+            //     $result->saveToFile($qrCodeFilePath );
+            //     $templateProcessor->setImageValue('barcode', array('path' => $qrCodeFilePath, 'width' => 200, 'height' => 200));
+            // } else {
                 $templateProcessor->setValue('barcode',"not yet assigned");
-            }
+            // }
     
             
             $outputPath = public_path($attachment . "_" . $letter->id . ".docx");

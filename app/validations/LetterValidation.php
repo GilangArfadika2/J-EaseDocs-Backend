@@ -63,7 +63,8 @@ class LetterValidation{
         return [
             'letter_id' => 'required|numeric|exists:surat,id',
             // 'id_template_surat' => 'required|numeric|exists:template_surat,id',
-            'user_id' => 'required|numeric|exists:user,id'
+            'user_id' => 'nullable|numeric|exists:user,id',
+            'email' =>  'nullable|string|exists:surat,'
         ];
     }
 
