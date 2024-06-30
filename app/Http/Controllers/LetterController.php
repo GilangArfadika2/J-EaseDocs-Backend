@@ -152,7 +152,7 @@ class LetterController extends Controller
            $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
           
            $startingLog = new Log();
-           $startingLog->letter_id = $letterId;
+           $startingLog->letter_id = $letter->id;
            $startingLog->status ="pending";
            $startingLog->user_id = $letterTemplate->id_admin;
            Mail::to($data['email_atasan_pemohon'])->send(new OtpMail($createdOTP['code'] , $link));
