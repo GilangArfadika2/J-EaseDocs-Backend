@@ -147,6 +147,7 @@ class LetterController extends Controller
             $nomorSurat = "J-ESD".$this->generateNomorSurat(10);
 
            $letter = $this->letterRepository->createLetter($data,$nomorSurat);
+           $letterTemplate = $this->letterTemplateRepository->getById($letter->id_template_surat);
            $createdOTP = $this->otpRepository->generateOtp($data['email_atasan_pemohon'],$letter->id);
            $link = "http://localhost:3000/J-EaseDoc/letter/verify-otp/" . $createdOTP['id'] ."/" . $data['email_atasan_pemohon'];
           
