@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use App\Models\Jabatan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
@@ -25,6 +26,7 @@ class AuthRepository
             'nip' => $validatedData['nip'],
             'password' => Hash::make($validatedData['password']),
             'role' => $validatedData['role'],
+            'jabatan' => $validatedData['jabatan']
         ]);
 
         // error_log("masuk 2");
@@ -106,6 +108,9 @@ class AuthRepository
 
     }
 
+    public function getAllJabatan(){
+        return Jabatan::all();
+    }
     public function updateUser( $id, Array $validatedCredentials): User {
         error_log("yeay" . $validatedCredentials['role']);
 

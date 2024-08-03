@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Repositories\LetterTemplateRepository;
+use App\Repositories\AuthRepository;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -17,10 +18,11 @@ class LetterTemplateController extends Controller
     protected $letterTemplateRepository;
     protected $letterController;
 
-    public function __construct(LetterTemplateRepository $letterTemplateRepository, LetterController $letterController)
+    public function __construct(AuthRepository $authRepository, LetterTemplateRepository $letterTemplateRepository, LetterController $letterController)
     {
         $this->letterTemplateRepository = $letterTemplateRepository;
         $this->letterController  = $letterController;
+        $this->authRepository = $authRepository;
     }
 
     public function index()
@@ -53,6 +55,14 @@ class LetterTemplateController extends Controller
 
         $template = $this->letterTemplateRepository->getById($id);
         return response()->json(['message' => 'letter fetched succesfully' , 'data' => $template],200);
+    }
+
+    public function getLetterApproval($id){
+        $template = $this->letterTemplateRepository->getById($id);
+        $charactersToRemove = ["{", "}"];
+        $id_approval = str_replace($charactersToRemove, '', $template->id_approval);
+        $user = $this->authRepository->getUserById((int)$id_approval);
+        return response()->json(['message' => 'letter fetched succesfully' , 'approval' => $user],200);
     }
 
     public function fetchFile(Request $request)
@@ -125,6 +135,7 @@ class LetterTemplateController extends Controller
                 return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
             }
             $template = $this->letterTemplateRepository->create($request->all(),$uniqueFilename);
+
             return response()->json(['message' => 'letter template created succesfully' , 'data' => $template],200);
         } else {
             return response()->json(['message' => 'there is no file in the input'], 400);

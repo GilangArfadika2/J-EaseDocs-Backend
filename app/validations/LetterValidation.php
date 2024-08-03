@@ -29,7 +29,7 @@ class LetterValidation{
             'nip_pemohon' => 'required|numeric',
             'nama_atasan_pemohon' => 'required|string',
             'email_atasan_pemohon' => 'required|email',
-            'jabatan_atasan_pemohon' => 'required|string',
+            'jabatan_atasan_pemohon' => 'required|numeric',
             'nip_atasan_pemohon' => 'required|numeric',
             'approved_at' => 'nullable|date', // Assuming 'approved_at' is a date field
         ];
@@ -64,7 +64,7 @@ class LetterValidation{
             'letter_id' => 'required|numeric|exists:surat,id',
             // 'id_template_surat' => 'required|numeric|exists:template_surat,id',
             'user_id' => 'nullable|numeric|exists:user,id',
-            'email' =>  'nullable|string|exists:surat,'
+            'email' =>  'nullable|string'
         ];
     }
 

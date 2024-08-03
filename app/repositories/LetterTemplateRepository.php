@@ -15,6 +15,7 @@ class LetterTemplateRepository
         return DB::table($this->table)->find($id);
     }
 
+
     public function getAll()
     {
             return DB::table($this->table)->select('id', 'perihal')->get();

@@ -103,5 +103,15 @@ class LogController extends Controller
         }
     }
 
+    public function getAllLogSurat(Request $request){
+        try{
+            $listLetter = $this->logRepository->getAll();
+            return response()->json(['message' => 'letter fetched succesfully' , 'data' => $listLetter],200);
+        }
+        catch(Exception $e){
+            return response()->json(['message' => $e ],500);
+        }
+    }
+
     
 }

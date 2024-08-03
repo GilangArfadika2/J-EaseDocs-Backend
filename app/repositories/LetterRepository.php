@@ -10,14 +10,18 @@ class LetterRepository
     {
         return Letter::all();
     }
-
     public function checkEmailValidation($letter_id,$email)
     {
-        // return DB::table('surat')->where('id', $letter_id)->where('email_atasan_pemohon',$email)->first();
-        // return Letter::where('id', $letter_id)
-        // ->where('email_atasan_pemohon', $email)
-        // ->first();
+        return DB::table('surat')->where('id', $letter_id)->where('email_atasan_pemohon',$email)->first();
     }
+
+    // public function checkEmailValidation($letter_id,$email)
+    // {
+    //     // return DB::table('surat')->where('id', $letter_id)->where('email_atasan_pemohon',$email)->first();
+    //     // return Letter::where('id', $letter_id)
+    //     // ->where('email_atasan_pemohon', $email)
+    //     // ->first();
+    // }
 
     public function getLetterMemberById(int $id)
 {

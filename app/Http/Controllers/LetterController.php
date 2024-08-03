@@ -554,9 +554,6 @@ class LetterController extends Controller
             // $id = $request->input('id');
             $letter = $this->letterTemplateRepository->getById($id);
     
-            // Decode the JSON data
-            // $letter->isian= json_decode($letter->isian);
-            // $letter->member = json_decode($letter->member);
 
             $isian = json_decode($letter->isian);
 

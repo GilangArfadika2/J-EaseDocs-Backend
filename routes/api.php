@@ -33,6 +33,7 @@ use App\Http\Controllers\LetterTemplateController;
     Route::get('/isLogin', [AuthController::class, 'isLogin']);
     Route::get('/logout', [AuthController::class, 'logout']);
     Route::patch('/user/name', [AuthController::class, 'updateName']);
+    Route::get('/jabatan', [AuthController::class, 'getAllJabatan']);
     
     Route::get('user', [AuthController::class, 'getAllUser']);
     Route::get('user-detail/{id}', [AuthController::class, 'getUserById'])->where('id', '[0-9]+');
@@ -50,6 +51,7 @@ use App\Http\Controllers\LetterTemplateController;
         Route::post('letter', [LetterController::class, 'getAllLetter']);
         Route::post('letter/detail', [LetterController::class, 'getLetterByID']);
         Route::get('letter-template/isian/{id}', [LetterController::class, 'getLetterTemplateFieldByID']);
+        Route::get('template-surat/approval/{id}', [LetterTemplateController::class, 'getLetterApproval']);
         // getLetterDataFileByID
 
         Route::post('/letter/verify-otp', [LetterController::class, 'verifyOTP']);
@@ -70,9 +72,9 @@ use App\Http\Controllers\LetterTemplateController;
         //logAdmin
         Route::get('/inbox/countUnread', [LetterController::class,"getUnreadNotificationCount"]);
         Route::get('/logAudit', [LogController::class,'getAllAdmin']);
+        Route::get('/logUser', [LogController::class,'getAllLogSurat']);
         Route::get('convert', [LetterTemplateController::class, 'convertWordToPdf']);
         Route::get('/log/{nomorSurat}', [LogController::class, 'getLogSurat']);
-        
 
 // Additional routes...
 

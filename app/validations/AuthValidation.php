@@ -13,7 +13,7 @@ class AuthValidation{
             'password' => 'required|string|min:8|max:255',
             'role' => 'required|in:checker,approval,admin,superadmin',
             'nip' => 'required|string|max:255',
-            'jabatan' => 'required|in:kadivOTI,kabagLay,kabagbis'
+            'jabatan' => 'required|numeric'
         ];
     }
 
@@ -40,10 +40,10 @@ class AuthValidation{
             'id' => 'required|numeric|min:1',
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255',
-            'jabatan' => 'required|in:kadivOTI,kabagLay,kabagbis',
+            'jabatan' => 'required|numeric',
         // 'password' => 'required|string|min:8|max:255',
             'role' => 'required|in:checker,approval,admin,superadmin',
-            'nip' => 'required|int|max:16',
+            'nip' => 'required|string|max:255',
         ];
     }
 

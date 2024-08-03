@@ -206,9 +206,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'Name updated successfully', 'user' => $user]);
     }
     
-    public function editPassword(Request $request){
-        return view('updatePasswordform');
-    }
+   
     public function updatePassword(Request $request)
     {
         // Retrieve the JWT token from the cookie
@@ -235,6 +233,7 @@ class AuthController extends Controller
         return AuthController::logout($request);
     }
 
+    
     public function getAllUser(Request $request) {
         try {
 
@@ -247,12 +246,24 @@ class AuthController extends Controller
             $user = Auth::guard('web')->setToken($token)->user();
 
             $listUsers = $this->authRepository->getAllUser();
-            // $_SESSION['allUser'] = $listUsers;
-            // return view('listAllUser');
 
         return response()->json([ 'message' => 'User Fetched succesfully','user'=> $user, 'data' => $listUsers]);
         }
         catch (Exception $e) {
+            error_log($e.getMessage());
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+    public function getAllJabatan(){
+        try{
+            
+
+            $listJabatan = $this->authRepository->getAllJabatan();
+
+        return response()->json([ 'message' => 'Jabatan Fetched succesfully', 'data' => $listJabatan]);
+        }
+            
+        catch(Exception $e){
             error_log($e.getMessage());
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -293,25 +304,51 @@ class AuthController extends Controller
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
 
-        $superadmin=AuthController::checkSuperAdmin($request);
-        $id = $request->input('id');
-        $user = $this->authRepository->getUserById($id);
-        switch($user['role']){
-            case "admin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            case "superadmin":
-                if($superadmin!==true)return response()->json(['message' => 'User is unauthorized'], 403);
-            default:
-            // Retrieve email and OTP from the request
+        if (!$request->hasCookie('jwt_token')) {
+            return response()->json(['message' => 'Missing token cookie'], 400);
+        }
 
-        $this->authRepository->deleteUser($id);
+        $token = $request->cookie('jwt_token');
 
-        $logAdmin = new LogAdmin();
-        $logAdmin->user_id = $user->id;
-        $logAdmin->action = "User " . $user->name .   " with role " . $user->role .   " has updated User " . $request->input("name") . " with role " . $request->input("role") ;
-        $this->logAdminRepository->create($logAdmin->getAttributes());
+        $admin = Auth::user();
+        $admin = Auth::guard('web')->setToken($token)->user();
+        if (!$admin)  {
+            return response()->json(['message' => 'User is unauthorized'], 400);
+        }
+        else{
+            if(in_array($admin->role, ['admin'])){
+                return response()->json(['user' => 'admin'], 403);
+            }
+            else{
+                $id = $request->input('id');
+        
+            $user = $this->authRepository->getUserById($id);
+            error_log("user yang akan dihapus" . $user);
+            switch($user['role']){
+                case "admin":
+                    if($admin->role!=="superadmin")return response()->json(['message' => 'User is unauthorized'], 403);
+                case "superadmin":
+                    if($admin->role!=="superadmin")return response()->json(['message' => 'User is unauthorized'], 403);
+                default:
+                break;
+                // Retrieve email and OTP from the request
+            }
 
-        return response()->json(['message' => 'User Deleted succesfully']);
+            $logAdmin = new LogAdmin();
+            $logAdmin->user_id = $admin->id;
+            $logAdmin->action = "User " . $admin->name  .   " with role " . $admin->role .   " has updated User " . $user->name . " with role " . $user->role ;
+            $this->logAdminRepository->create($logAdmin->getAttributes());
+
+            $this->authRepository->deleteUser($id);
+            error_log("check");
+            
+
+            return response()->json(['message' => 'User Deleted succesfully']);
+
+        }
+
+        
+        
 
         }
 
@@ -319,28 +356,7 @@ class AuthController extends Controller
     }
 
     //filter out admin vs superadmin privilege
-    public function checkSuperAdmin(Request $request){
-        error_log($request);
-        if (!$request->hasCookie('jwt_token')) {
-            return response()->json(['message' => 'Missing token cookie'], 400);
-        }
-
-        $token = $request->cookie('jwt_token');
-
-        $user = Auth::user();
-        $user = Auth::guard('web')->setToken($token)->user();
-        if (!$user)  {
-            return response()->json(['message' => 'User is unauthorized'], 400);
-        }
-        else{
-            if(in_array($user->role, ['admin'])){
-                return response()->json(['user' => 'admin'], 403);
-            }
-            else{
-                return true;
-            }
-        }
-    }
+    
 
 
 
@@ -351,7 +367,13 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json(['message' => 'input json is not validated', 'errors' => $validator->errors()], 400);
         }
-
+        $token = $request->cookie('jwt_token');
+        $user = Auth::guard('web')->setToken($token)->user();
+        
+            // Check if the user is authenticated
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         
         $id = $request->input('id');
 
